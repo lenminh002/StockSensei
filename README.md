@@ -34,17 +34,27 @@ StockSensei is an intelligent, AI-powered CLI application that serves as your ex
    ```
 
 2. **Set up the environment:**
-   This project uses `uv` for lightning-fast package management. Install dependencies and the `stocksensei` CLI command:
+   This project uses `uv` for lightning-fast package management. Install the CLI command globally by running:
 
    ```bash
-   uv sync
-   uv pip install -e .
+   uv tool install .
    ```
 
+   _(Alternatively, you can install dependencies locally for development using `uv sync`)_
+
 3. **Environment Variables:**
-   Make sure to configure your `.env` file! You will likely need your OpenAI (or equivalent model) API keys for LangChain.
+   StockSensei requires an OpenAI API key.
+   - For local development (`uv run main.py`), you can configure a `.env` file in the project folder.
+   - For global CLI usage (`stocksensei`), you must set the variable in your global terminal configuration:
+   
+   **Mac/Linux (`~/.zshrc` or `~/.bashrc`):**
    ```bash
-   OPENAI_API_KEY=your_api_key_here
+   export OPENAI_API_KEY=your_api_key_here
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   $env:OPENAI_API_KEY="your_api_key_here"
    ```
 
 ## Usage 💡
@@ -53,15 +63,11 @@ There are two ways to run StockSensei:
 
 ### Method 1: Global Terminal Command (Recommended)
 
-Once installed via the steps above, you can launch StockSensei from **any directory** on your computer by simply typing:
+Once installed using `uv tool install .`, StockSensei is automatically added to your system's PATH. You can launch it from **any directory** on your computer by simply typing:
 
 ```bash
 stocksensei
 ```
-> **Tip:** If the `stocksensei` command is not found, you need to add your virtual environment's binary folder to your terminal's `PATH`. Run this command in your project folder to fix it:
-> ```bash
-> echo 'export PATH="$PWD/.venv/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
-> ```
 
 ### Method 2: Local IDE / Development (Optional)
 

@@ -10,6 +10,3 @@ wheels/
 
 # Environment variables
 .env
-
-# Other
-*.egg-info
