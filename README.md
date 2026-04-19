@@ -34,13 +34,12 @@ StockSensei is an intelligent, AI-powered CLI application that serves as your ex
    ```
 
 2. **Set up the environment:**
-   This project uses `uv` for lightning-fast package management. Install dependencies from the `pyproject.toml` / `uv.lock`.
+   This project uses `uv` for lightning-fast package management. Install dependencies and the `stocksensei` CLI command:
 
    ```bash
    uv sync
+   uv pip install -e .
    ```
-
-   _(Alternatively, you can just install via pip: `pip install langchain langchain-openai python-dotenv yfinance langgraph`)_
 
 3. **Environment Variables:**
    Make sure to configure your `.env` file! You will likely need your OpenAI (or equivalent model) API keys for LangChain.
@@ -50,7 +49,23 @@ StockSensei is an intelligent, AI-powered CLI application that serves as your ex
 
 ## Usage 💡
 
-Run the main chat application:
+There are two ways to run StockSensei:
+
+### Method 1: Global Terminal Command (Recommended)
+
+Once installed via the steps above, you can launch StockSensei from **any directory** on your computer by simply typing:
+
+```bash
+stocksensei
+```
+> **Tip:** If the `stocksensei` command is not found, you need to add your virtual environment's binary folder to your terminal's `PATH`. Run this command in your project folder to fix it:
+> ```bash
+> echo 'export PATH="$PWD/.venv/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+> ```
+
+### Method 2: Local IDE / Development (Optional)
+
+If you are developing the app or using an IDE like VSCode, you can run the program directly via Python in your project folder:
 
 ```bash
 uv run main.py

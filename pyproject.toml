@@ -10,3 +10,9 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "yfinance>=1.3.0",
 ]
+
+[project.scripts]
+stocksensei = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "agent", "tools"]
