@@ -47,7 +47,7 @@ def get_price(ticker: str) -> str:
         return f"Error fetching stock price for {ticker.upper()}: \n{str(e)}"
         
 
-@tool(return_direct=True)
+@tool
 def get_stock_summary(ticker: str) -> str:
     """
     Get a summary of a stock including market cap, P/E ratio, and 52-week high/low.
@@ -107,7 +107,9 @@ def get_historical_data(ticker: str, period: str = "1mo") -> str:
         hist = stock.history(period=period)
         if hist.empty:
             return f"No historical data found for {ticker.upper()}."
-        return f"{MAGENTA}Historical data for {BLUE}{ticker.upper()}:{RESET}\n{YELLOW}{hist}{RESET}"
+        df = hist[['Open', 'High', 'Low', 'Close']].round(2).tail(10)
+        df.index = df.index.strftime('%Y-%m-%d')
+        return f"Historical OHLC data for {ticker.upper()} ({period}):\n{df.to_string()}"
     except Exception as e:
         return f"Error fetching historical data for {ticker.upper()}: \n{str(e)}"
 

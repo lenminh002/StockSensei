@@ -1,87 +1,98 @@
 # StockSensei 📈
 
-StockSensei is an intelligent, AI-powered CLI application that serves as your expert financial analyst. Built using Python, LangChain, and `yfinance`, StockSensei allows you to query stock information, fetch real-time prices, analyze historical data, and read the latest news natively in your terminal using natural language.
+StockSensei is an intelligent, AI-powered **terminal CLI application** that acts as your personal expert financial analyst — running entirely inside your terminal. Built with Python, LangChain, and `yfinance`, it lets you query real-time stock data, compare companies, generate ASCII price charts, and read market news using plain natural language. No browser. No dashboard. Just your terminal.
 
-## Features ✨
+---
 
-- **Natural Language Interaction:** Ask complex questions about stocks like "Which is a better buy?" or "Give me the top 10 stocks that are down right now."
-- **Real-Time Data:** Fetches the latest stock prices, daily percentage changes, market caps, P/E ratios, and more.
-- **News Integration:** Get the latest headlines for any given company.
-- **Historical Analysis:** Review historical price trends over specific periods.
-- **Beautiful Terminal Interface:** Clean, formatted output using ANSI colored tags to highlight money (yellow), ticker names (blue), and positive/negative changes (green/red).
+## ✨ Features
 
-## Visual Example 📸
+- **🖥️ Runs Entirely in Your Terminal** — A first-class command-line experience built for developers and traders who live in the terminal. Launch it globally with one command from any directory.
+- **💬 Natural Language Interaction** — Ask questions the way you think: *"Is NVDA a better buy than AAPL right now?"* or *"Show me Tesla's trend over the last 3 months."*
+- **📊 ASCII Price Charts** — Visualize historical price trends right in your terminal with a generated scatter chart, sparkline trend indicator, and annotated date range.
+- **📋 Beautiful Data Tables** — Side-by-side stock comparisons are rendered as clean, properly aligned tables using `rich` — no more ugly pipe characters.
+- **📡 Real-Time Market Data** — Live prices, daily % changes, market caps, P/E ratios, 52-week highs/lows, and more via `yfinance`.
+- **📰 News Integration** — Fetch the latest headlines for any stock or company.
+- **🧠 Conversational Memory** — The agent remembers context within your session, so follow-up questions just work.
+- **🔐 Zero-Config API Setup** — On first launch, StockSensei securely prompts you for your OpenAI key, validates it live, and saves it globally so you never have to set it again.
 
-![StockSensei Demo](./assets/demo.png)
+---
 
-## Tech Stack 🛠️
+## 📸 Visual Examples
 
-- **Core Language:** Python >= 3.13 (Utilizing modern features and type hinting)
-- **Financial Data Aggregation:** [yfinance](https://github.com/ranaroussi/yfinance) (Fetches real-time market data, company summaries, and news)
-- **AI & Agent Framework:** [LangChain](https://github.com/langchain-ai/langchain) (Provides core LLM abstractions, prompt templates, and agent orchestration)
-- **Model Integration:** `langchain-openai` (Standardizes communication with underlying foundation models)
-- **State Management:** [LangGraph](https://github.com/langchain-ai/langgraph) (Employed selectively for session memory and checkpointing via `MemorySaver`)
-- **Environment Management:** `python-dotenv` (Secure loading of API keys and configs from `.env`)
-- **Package Manager:** `uv` (Extremely fast Python package resolution and virtual environment creation)
+Here are a few examples of StockSensei's terminal UI in action:
 
-## Installation & Setup 🚀
+![StockSensei Demonstration 1](./assets/demo.png)
+![StockSensei Demonstration 2](./assets/demo2.png)
+![StockSensei Demonstration 4](./assets/demo4.png)
+![StockSensei Demonstration 3](./assets/demo3.png)
 
-1. **Clone the repository:**
+---
 
-   ```bash
-   git clone https://github.com/lenminh002/StockSensei.git
-   cd StockSensei
-   ```
+## 🛠️ Tech Stack
 
-2. **Set up the environment:**
-   This project uses `uv` for lightning-fast package management. Install the CLI command globally by running:
+| Layer | Technology | Purpose |
+|---|---|---|
+| Language | Python >= 3.13 | Core runtime |
+| Financial Data | [yfinance](https://github.com/ranaroussi/yfinance) | Real-time prices, OHLC history, news, company info |
+| AI Framework | [LangChain](https://github.com/langchain-ai/langchain) | LLM abstractions, prompt templates, tool-calling agent |
+| LLM Provider | [OpenAI](https://openai.com) via `langchain-openai` | GPT model powering the analyst reasoning |
+| Agent State | [LangGraph](https://github.com/langchain-ai/langgraph) | Conversation memory and session checkpointing |
+| Terminal UI | [Rich](https://github.com/Textualize/rich) | Beautiful markdown tables and formatted output |
+| Environment | `python-dotenv` | Secure `.env` loading for local development |
+| Package Manager | `uv` | Fast dependency resolution and global CLI installation |
 
-   ```bash
-   uv tool install .
-   ```
+---
 
-   _(Alternatively, you can install dependencies locally for development using `uv sync`)_
+## 🚀 Installation & Setup
 
-3. **Environment Variables:**
-   StockSensei requires an OpenAI API key.
-   - For local development (`uv run main.py`), you can configure a `.env` file in the project folder.
-   - For global CLI usage (`stocksensei`), you must set the variable in your global terminal configuration:
-   
-   **Mac/Linux (`~/.zshrc` or `~/.bashrc`):**
-   ```bash
-   export OPENAI_API_KEY=your_api_key_here
-   ```
+**The Easiest Way (Global Install)**  
+Install StockSensei in a single command directly from GitHub. No cloning required:
 
-   **Windows (PowerShell):**
-   ```powershell
-   $env:OPENAI_API_KEY="your_api_key_here"
-   ```
+```bash
+uv tool install git+https://github.com/lenminh002/StockSensei.git
+```
 
-## Usage 💡
-
-There are two ways to run StockSensei:
-
-### Method 1: Global Terminal Command (Recommended)
-
-Once installed using `uv tool install .`, StockSensei is automatically added to your system's PATH. You can launch it from **any directory** on your computer by simply typing:
-
+Then just run it from anywhere:
 ```bash
 stocksensei
 ```
 
-### Method 2: Local IDE / Development (Optional)
+On first launch, StockSensei will prompt you for your **OpenAI API Key**, validate it live, and save it permanently — so you only ever need to do this once.
 
-If you are developing the app or using an IDE like VSCode, you can run the program directly via Python in your project folder:
+---
 
+**Developer Setup (Local Cloning)**  
+To modify the code or contribute:
 ```bash
+git clone https://github.com/lenminh002/StockSensei.git
+cd StockSensei
+uv sync
 uv run main.py
 ```
+*(Place your OpenAI API key in a `.env` file for local development.)*
 
-_(Or `python main.py` if using a traditional virtual environment)._
+---
 
-Once running, simply type your queries:
+## 💡 Usage
 
-> **You:** "Give me the summary of AAPL"  
-> **StockSensei:** _Responds with beautifully formatted market cap, P/E ratio, and 52-week data._
+Once running, just type your questions in plain English:
 
-Type `exit`, `quit`, or `q` to terminate the application.
+```
+You: nvidia vs apple
+StockSensei: [Renders a comparison table with price, P/E, market cap, 52w range]
+
+You: show me nvda's chart for the last 3 months
+StockSensei: [Draws an ASCII price chart with date range and trend indicator]
+
+You: what's the latest news on tesla?
+StockSensei: [Lists the 10 most recent headlines]
+```
+
+Type `exit`, `quit`, or `q` to close the app.
+
+---
+
+## 📝 Notes
+
+- **API Key:** Requires an [OpenAI API Key](https://platform.openai.com/account/api-keys). StockSensei handles the setup automatically on first launch.
+- **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
