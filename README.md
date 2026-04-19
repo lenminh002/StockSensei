@@ -42,6 +42,24 @@ Here are a few examples of StockSensei's terminal UI in action:
 
 ---
 
+## ⚙️ Prerequisites
+
+StockSensei uses [`uv`](https://docs.astral.sh/uv/) for installation. If you don't have it yet, install it first:
+
+**Mac/Linux:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Once installed, restart your terminal to make sure `uv` is available.
+
+---
+
 ## 🚀 Installation & Setup
 
 **The Easiest Way (Global Install)**  
