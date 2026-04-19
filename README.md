@@ -23,8 +23,7 @@ Here are a few examples of StockSensei's terminal UI in action:
 
 ![StockSensei Demonstration 1](./assets/demo.png)
 ![StockSensei Demonstration 2](./assets/demo2.png)
-![StockSensei Demonstration 4](./assets/demo4.png)
-![StockSensei Demonstration 3](./assets/demo3.png)
+![StockSensei Demonstration 5](./assets/demo5.png) 
 
 ---
 
@@ -96,3 +95,27 @@ Type `exit`, `quit`, or `q` to close the app.
 
 - **API Key:** Requires an [OpenAI API Key](https://platform.openai.com/account/api-keys). StockSensei handles the setup automatically on first launch.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
+
+---
+
+## 🗑️ Uninstall
+
+To completely remove StockSensei from your system:
+
+**1. Uninstall the CLI tool:**
+```bash
+uv tool uninstall stocksensei
+```
+
+**2. Remove the saved API key** *(optional — only if you want a full clean removal):*
+
+Mac/Linux:
+```bash
+rm ~/.stocksensei_env
+```
+
+Windows (PowerShell):
+```powershell
+Remove-Item "$HOME\.stocksensei_env"
+```
+
