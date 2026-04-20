@@ -80,12 +80,17 @@ memory = MemorySaver()
 
 
 def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: str):
+    """Instantiate and return the LangGraph agent equipped with the defined tools and prompt."""
+    if langchain_provider == "google_genai":
+        provider_kwargs = {"google_api_key": api_key}
+    else:
+        provider_kwargs = {"api_key": api_key, "base_url": base_url}
+
     model = init_chat_model(
         model_name,
         model_provider=langchain_provider,
-        api_key=api_key,
-        base_url=base_url,
         temperature=0.3,
+        **provider_kwargs,
     )
     agent = create_agent(
         model=model,

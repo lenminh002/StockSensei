@@ -1,34 +1,16 @@
-import re
-
 from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
 
 from agent import get_agent
 from config import current_provider_info, ensure_config, switch_model_interactive
-
-CYAN = "\033[96m"
-YELLOW = "\033[93m"
-GREEN = "\033[92m"
-RED = "\033[91m"
-RESET = "\033[0m"
+from utils import CYAN, GREEN, RED, RESET, YELLOW, format_output
 
 console = Console()
 
 
-def format_output(text: str) -> str:
-    text = re.sub(r'^(?:Final Answer|Thought|Action|Observation):\s*', '', text, flags=re.IGNORECASE).strip()
-    color_map = {
-        "<BLUE>": "\033[94m", "<YELLOW>": "\033[93m",
-        "<GREEN>": "\033[92m", "<RED>": "\033[91m",
-        "<RESET>": "\033[0m",
-    }
-    for tag, code in color_map.items():
-        text = text.replace(tag, code)
-    return text
-
-
 def _build_agent(config: dict):
+    """Construct the LangChain agent instance using the user's active configuration."""
     name, model, lc_provider, base_url, api_key = current_provider_info(config)
     agent = get_agent(model, lc_provider, api_key, base_url)
     label = f"{name} / {model}"
@@ -36,6 +18,7 @@ def _build_agent(config: dict):
 
 
 def main():
+    """Start the main StockSensei application and terminal chat loop."""
     load_dotenv(find_dotenv(usecwd=True))
 
     config = ensure_config()
@@ -48,7 +31,11 @@ def main():
     print(f"{CYAN}Ask me anything about stocks. Type {YELLOW}/models{CYAN} to switch provider/model, or 'exit' to quit.{RESET}\n")
 
     while True:
-        user_input = input(f"{YELLOW}You: {RESET}").strip()
+        try:
+            user_input = input(f"{YELLOW}You: {RESET}").strip()
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n{GREEN}Goodbye! Happy investing!{RESET}\n")
+            break
 
         if not user_input:
             continue
@@ -65,11 +52,19 @@ def main():
             print(f"{CYAN}Now using: {YELLOW}{label}{RESET}\n")
             continue
 
-        response = agent.invoke(
-            {"messages": [{"role": "user", "content": user_input}]},
-            config=run_config,
-        )
-        output_text = format_output(response["messages"][-1].content)
+        try:
+            response = agent.invoke(
+                {"messages": [{"role": "user", "content": user_input}]},
+                config=run_config,
+            )
+        except KeyboardInterrupt:
+            print(f"\n{YELLOW}Interrupted.{RESET}\n")
+            continue
+
+        raw = response["messages"][-1].content
+        if isinstance(raw, list):
+            raw = " ".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in raw)
+        output_text = format_output(raw)
 
         print(f"\n{CYAN}StockSensei:{RESET}")
         console.print(Markdown(output_text))

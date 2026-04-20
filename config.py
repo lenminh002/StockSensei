@@ -2,15 +2,11 @@ import json
 import os
 from typing import Optional
 
-from rich.prompt import IntPrompt, Prompt
+from rich.prompt import Prompt
+
+from utils import CYAN, GREEN, RED, RESET, YELLOW, pick_option
 
 CONFIG_PATH = os.path.expanduser("~/.stocksensei_config.json")
-
-CYAN = "\033[96m"
-YELLOW = "\033[93m"
-GREEN = "\033[92m"
-RED = "\033[91m"
-RESET = "\033[0m"
 
 PROVIDER_PRESETS: dict[str, dict] = {
     "openai": {
@@ -76,16 +72,19 @@ PROVIDER_PRESETS: dict[str, dict] = {
 LANGCHAIN_PROVIDER_MAP: dict[str, str] = {
     "openai": "openai",
     "anthropic": "anthropic",
+    "gemini": "google_genai",
     "groq": "groq",
     "ollama": "ollama",
 }
 
 
 def get_langchain_provider(provider_name: str) -> str:
+    """Map a generic provider name to its corresponding LangChain provider identifier."""
     return LANGCHAIN_PROVIDER_MAP.get(provider_name, "openai")
 
 
 def load_config() -> Optional[dict]:
+    """Load the user's StockSensei configuration from the JSON file."""
     if not os.path.exists(CONFIG_PATH):
         return None
     try:
@@ -96,6 +95,7 @@ def load_config() -> Optional[dict]:
 
 
 def save_config(config: dict) -> None:
+    """Save the updated configuration to the JSON file with restricted file permissions."""
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
     try:
@@ -105,6 +105,7 @@ def save_config(config: dict) -> None:
 
 
 def _validate_api_key(base_url: str, api_key: str) -> bool:
+    """Check if the provided API key is valid for the given OpenAI-compatible endpoint."""
     import openai
     try:
         client = openai.OpenAI(api_key=api_key or "not-needed", base_url=base_url)
@@ -117,24 +118,14 @@ def _validate_api_key(base_url: str, api_key: str) -> bool:
         return True
 
 
-def _pick(prompt: str, options: list[str]) -> int:
-    """Display a numbered menu and return the 0-based index of the user's choice."""
-    for i, opt in enumerate(options, 1):
-        print(f"  {CYAN}{i}.{RESET} {opt}")
-    while True:
-        choice = IntPrompt.ask(f"{CYAN}{prompt}{RESET}")
-        if 1 <= choice <= len(options):
-            return choice - 1
-        print(f"{RED}Please enter a number between 1 and {len(options)}.{RESET}")
-
-
 def _add_provider_interactive(config: dict) -> dict:
+    """Interactively walk the user through adding a new AI provider or a custom one."""
     preset_names = list(PROVIDER_PRESETS.keys())
     options = [f"{n}  ({PROVIDER_PRESETS[n]['base_url']})" for n in preset_names]
     options.append("Custom  (enter base URL manually)")
 
     print(f"\n{YELLOW}Select a provider:{RESET}")
-    idx = _pick("Your choice", options)
+    idx = pick_option("Your choice", options)
 
     if idx < len(preset_names):
         provider_name = preset_names[idx]
@@ -165,7 +156,7 @@ def _add_provider_interactive(config: dict) -> dict:
         models = [m.strip() for m in raw.split(",") if m.strip()]
 
     print(f"\n{YELLOW}Select default model for {provider_name}:{RESET}")
-    midx = _pick("Your choice", models)
+    midx = pick_option("Your choice", models)
 
     config.setdefault("providers", {})
     config["providers"][provider_name] = {
@@ -181,6 +172,7 @@ def _add_provider_interactive(config: dict) -> dict:
 
 
 def ensure_config() -> dict:
+    """Ensure a valid configuration exists, triggering the interactive setup if none is found."""
     config = load_config()
     if config:
         return config
@@ -199,6 +191,7 @@ def current_provider_info(config: dict) -> tuple[str, str, str, str, str]:
 
 
 def switch_model_interactive(config: dict) -> dict:
+    """Interactively allow the user to switch the active provider and model."""
     provider_names = list(config.get("providers", {}).keys())
     options = [
         f"{n}  (default: {config['providers'][n]['default_model']})"
@@ -210,7 +203,7 @@ def switch_model_interactive(config: dict) -> dict:
     cur_m = config["providers"].get(cur_p, {}).get("default_model", "?")
     print(f"\n{YELLOW}Current: {cur_p} / {cur_m}{RESET}")
     print(f"{YELLOW}Select provider:{RESET}")
-    pidx = _pick("Your choice", options)
+    pidx = pick_option("Your choice", options)
 
     if pidx == len(provider_names):
         return _add_provider_interactive(config)
@@ -219,7 +212,7 @@ def switch_model_interactive(config: dict) -> dict:
     models = config["providers"][provider_name]["models"]
 
     print(f"\n{YELLOW}Select model:{RESET}")
-    midx = _pick("Your choice", models)
+    midx = pick_option("Your choice", models)
 
     config["default_provider"] = provider_name
     config["providers"][provider_name]["default_model"] = models[midx]
