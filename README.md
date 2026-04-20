@@ -150,13 +150,13 @@ Your selection is saved to `~/.stocksensei_config.json` and remembered across se
 
 | Provider | Models |
 |---|---|
-| **OpenAI** | gpt-5.4, gpt-5.4-mini, gpt-4o, o3, o4-mini, and more |
-| **Anthropic** | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
-| **Gemini** | gemini-2.5-pro, gemini-2.5-flash, gemini-2.0-flash |
-| **Groq** | llama-3.3-70b, llama-3.1-8b, mixtral-8x7b |
+| **OpenAI** | gpt-5.4, gpt-5.4-mini, o3, o4-mini, gpt-4o, gpt-4o-mini |
+| **Anthropic** | claude-opus-4-7, claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5-20251001 |
+| **Gemini** | gemini-3.1-pro-preview, gemini-3-flash-preview, gemini-3.1-flash-lite-preview, gemini-3-deep-think, gemini-2.5-pro, gemini-2.5-flash |
+| **Groq** | llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768 |
 | **DeepSeek** | deepseek-chat, deepseek-reasoner |
-| **OpenRouter** | Any model available on OpenRouter |
-| **Ollama** | Any locally running model |
+| **OpenRouter** | openai/gpt-4.1-mini, anthropic/claude-opus-4-7, google/gemini-2.5-pro, meta-llama/llama-3.3-70b-instruct |
+| **Ollama** | llama3.2, qwen2.5, mistral |
 | **Custom** | Any OpenAI-compatible endpoint |
 
 ---
