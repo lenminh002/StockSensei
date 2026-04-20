@@ -78,6 +78,17 @@ On first launch, StockSensei will prompt you for your **OpenAI API Key**, valida
 
 ---
 
+**Updating to the Latest Version**  
+To update StockSensei to the newest version after a new update is pushed, simply run:
+
+```bash
+uv tool upgrade stocksensei
+```
+
+*(If that doesn't pick up the latest changes, you can force a reinstall with: `uv tool install --force git+https://github.com/lenminh002/StockSensei.git`)*
+
+---
+
 **Developer Setup (Local Cloning)**  
 To modify the code or contribute:
 ```bash

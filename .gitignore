@@ -10,3 +10,5 @@ wheels/
 
 # Environment variables
 .env
+
+CLAUDE.md
