@@ -13,7 +13,8 @@ StockSensei is an intelligent, AI-powered **terminal CLI application** that acts
 - **📡 Real-Time Market Data** — Live prices, daily % changes, market caps, P/E ratios, 52-week highs/lows, and more via `yfinance`.
 - **📰 News Integration** — Fetch the latest headlines for any stock or company.
 - **🧠 Conversational Memory** — The agent remembers context within your session, so follow-up questions just work.
-- **🔐 Zero-Config API Setup** — On first launch, StockSensei securely prompts you for your OpenAI key, validates it live, and saves it globally so you never have to set it again.
+- **🤖 Multi-Provider AI Support** — Choose from OpenAI, Anthropic, Gemini, Groq, DeepSeek, OpenRouter, Ollama, or any custom OpenAI-compatible endpoint. Switch providers mid-session with `/models`.
+- **🔐 Zero-Config Setup** — On first launch, StockSensei walks you through picking a provider and saving your API key globally — so you never have to set it again.
 
 ---
 
@@ -34,7 +35,7 @@ Here are a few examples of StockSensei's terminal UI in action:
 | Language | Python >= 3.13 | Core runtime |
 | Financial Data | [yfinance](https://github.com/ranaroussi/yfinance) | Real-time prices, OHLC history, news, company info |
 | AI Framework | [LangChain](https://github.com/langchain-ai/langchain) | LLM abstractions, prompt templates, tool-calling agent |
-| LLM Provider | [OpenAI](https://openai.com) via `langchain-openai` | GPT model powering the analyst reasoning |
+| LLM Providers | OpenAI, Anthropic, Gemini, Groq, DeepSeek, OpenRouter, Ollama | Swappable AI backends via `/models` |
 | Agent State | [LangGraph](https://github.com/langchain-ai/langgraph) | Conversation memory and session checkpointing |
 | Terminal UI | [Rich](https://github.com/Textualize/rich) | Beautiful markdown tables and formatted output |
 | Environment | `python-dotenv` | Secure `.env` loading for local development |
@@ -74,18 +75,18 @@ Then just run it from anywhere:
 stocksensei
 ```
 
-On first launch, StockSensei will prompt you for your **OpenAI API Key**, validate it live, and save it permanently — so you only ever need to do this once.
+On first launch, StockSensei will walk you through selecting an AI provider and entering your API key — saved permanently so you only ever do this once.
 
 ---
 
 **Updating to the Latest Version**  
-To update StockSensei to the newest version after a new update is pushed, simply run:
+To update StockSensei to the newest version:
 
 ```bash
 uv tool upgrade stocksensei
 ```
 
-*(If that doesn't pick up the latest changes, you can force a reinstall with: `uv tool install --force git+https://github.com/lenminh002/StockSensei.git`)*
+*(If that doesn't pick up the latest changes, force a reinstall: `uv tool install --force git+https://github.com/lenminh002/StockSensei.git`)*
 
 ---
 
@@ -97,7 +98,6 @@ cd StockSensei
 uv sync
 uv run main.py
 ```
-*(Place your OpenAI API key in a `.env` file for local development.)*
 
 ---
 
@@ -118,33 +118,71 @@ StockSensei: [Lists the 10 most recent headlines]
 
 Type `exit`, `quit`, or `q` to close the app.
 
+### Switching Providers & Models
+
+Type `/models` at any time during a session to switch your AI provider or model:
+
+```
+You: /models
+
+Current: openai / gpt-4.1-mini
+Select provider:
+  1. openai  (default: gpt-4.1-mini)
+  2. anthropic  (default: claude-sonnet-4-6)
+  3. groq  (default: llama-3.3-70b-versatile)
+  4. + Add new provider
+Your choice: 2
+
+Select model:
+  1. claude-opus-4-7
+  2. claude-sonnet-4-6
+  3. claude-haiku-4-5-20251001
+Your choice: 1
+
+✓ Switched to anthropic / claude-opus-4-7
+```
+
+Your selection is saved to `~/.stocksensei_config.json` and remembered across sessions.
+
+---
+
+## 🤖 Supported Providers
+
+| Provider | Models |
+|---|---|
+| **OpenAI** | gpt-5.4, gpt-5.4-mini, gpt-4o, o3, o4-mini, and more |
+| **Anthropic** | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
+| **Gemini** | gemini-2.5-pro, gemini-2.5-flash, gemini-2.0-flash |
+| **Groq** | llama-3.3-70b, llama-3.1-8b, mixtral-8x7b |
+| **DeepSeek** | deepseek-chat, deepseek-reasoner |
+| **OpenRouter** | Any model available on OpenRouter |
+| **Ollama** | Any locally running model |
+| **Custom** | Any OpenAI-compatible endpoint |
+
 ---
 
 ## 📝 Notes
 
-- **API Key:** Requires an [OpenAI API Key](https://platform.openai.com/account/api-keys). StockSensei handles the setup automatically on first launch.
+- **Config file:** Provider settings and API keys are stored in `~/.stocksensei_config.json`.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
 
 ---
 
 ## 🗑️ Uninstall
 
-To completely remove StockSensei from your system:
-
 **1. Uninstall the CLI tool:**
 ```bash
 uv tool uninstall stocksensei
 ```
 
-**2. Remove the saved API key** *(optional — only if you want a full clean removal):*
+**2. Remove saved config** *(optional — only if you want a full clean removal):*
 
 Mac/Linux:
 ```bash
-rm ~/.stocksensei_env
+rm ~/.stocksensei_config.json
 ```
 
 Windows (PowerShell):
 ```powershell
-Remove-Item "$HOME\.stocksensei_env"
+Remove-Item "$HOME\.stocksensei_config.json"
 ```
-

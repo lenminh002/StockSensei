@@ -4,7 +4,6 @@ from langchain.agents import create_agent
 
 from langchain_core.prompts import PromptTemplate
 
-from dotenv import load_dotenv
 from tools import (
     get_price,
     get_stock_summary,
@@ -14,7 +13,6 @@ from tools import (
     compare_stocks,
     compare_stocks_summary
 )
-load_dotenv()
 
 tools = [get_price, get_stock_summary, get_company_summary, get_historical_data, get_news, compare_stocks, compare_stocks_summary]
 
@@ -80,12 +78,19 @@ Thought: {agent_scratchpad}
 
 memory = MemorySaver()
 
-def get_agent():
-    model = init_chat_model("gpt-5.4-mini", temperature=0.3)
+
+def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: str):
+    model = init_chat_model(
+        model_name,
+        model_provider=langchain_provider,
+        api_key=api_key,
+        base_url=base_url,
+        temperature=0.3,
+    )
     agent = create_agent(
-        model=model, 
-        tools=tools, 
+        model=model,
+        tools=tools,
         system_prompt=prompt.template,
-        checkpointer=memory
+        checkpointer=memory,
     )
     return agent
