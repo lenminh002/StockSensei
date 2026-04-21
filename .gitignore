@@ -13,3 +13,5 @@ wheels/
 
 *.egg-info/
 CLAUDE.md
+.pi/
+PLAN.md
