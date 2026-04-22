@@ -222,9 +222,9 @@ def build_52w_range_visual(ticker: str) -> dict:
 
 @tool
 def build_price_comparison_visual(tickers: str) -> dict:
-    """Build a render-ready comparison table block for prices and daily change across tickers."""
-    data = compare_stocks.func(tickers)
-    return {"block": make_price_comparison_block(data.get("stocks", []), title="Price comparison")}
+    """Build a render-ready full comparison table block across tickers."""
+    stocks = [fetch_stock_snapshot(ticker) for ticker in parse_ticker_list(tickers)]
+    return {"block": make_price_comparison_block(stocks, title="Price comparison")}
 
 
 @tool
