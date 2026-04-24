@@ -31,6 +31,24 @@ def _sparkline(values: list[float]) -> str:
     return "".join(ticks[min(int((value - low) / (high - low) * (len(ticks) - 1)), len(ticks) - 1)] for value in values)
 
 
+def _fmt_market_cap(value: Any) -> str:
+    if not isinstance(value, (int, float)):
+        return "N/A"
+    return f"${value / 1_000_000_000_000:.2f}T" if value >= 1_000_000_000_000 else f"${value / 1_000_000_000:.2f}B"
+
+
+def _fmt_price(value: Any) -> str:
+    return f"${value:,.2f}" if isinstance(value, (int, float)) else "N/A"
+
+
+def _fmt_change(value: Any) -> str:
+    return f"{value:+.2f}%" if isinstance(value, (int, float)) else "N/A"
+
+
+def _fmt_pe(value: Any) -> str:
+    return f"{value:.2f}" if isinstance(value, (int, float)) else "N/A"
+
+
 class TextBlock(BaseModel):
     type: Literal["text"]
     title: str | None = None
@@ -203,21 +221,17 @@ def make_news_block(headlines: list[str], ticker: str | None = None, title: str 
 def make_snapshot_card_block(snapshot: dict[str, Any]) -> dict[str, Any]:
     price = snapshot.get("price")
     change = snapshot.get("change_percent")
-    market_cap = snapshot.get("market_cap")
     pe = snapshot.get("pe_ratio")
     forward_pe = snapshot.get("forward_pe")
+    market_cap = snapshot.get("market_cap")
 
-    if isinstance(market_cap, (int, float)):
-        market_cap_value = f"${market_cap / 1_000_000_000_000:.2f}T" if market_cap >= 1_000_000_000_000 else f"${market_cap / 1_000_000_000:.2f}B"
-    else:
-        market_cap_value = "N/A"
-
+    change_tone = "bright_green" if isinstance(change, (int, float)) and change >= 0 else "bright_red"
     items = [
-        {"label": "Price", "value": f"${price:,.2f}" if isinstance(price, (int, float)) else "N/A", "tone": "bright_cyan"},
-        {"label": "Daily change", "value": f"{change:+.2f}%" if isinstance(change, (int, float)) else "N/A", "tone": "bright_green" if isinstance(change, (int, float)) and change >= 0 else "bright_red"},
-        {"label": "Market cap", "value": market_cap_value, "tone": "bright_magenta"},
-        {"label": "P/E", "value": f"{pe:.2f}" if isinstance(pe, (int, float)) else "N/A", "tone": "bright_yellow"},
-        {"label": "Forward P/E", "value": f"{forward_pe:.2f}" if isinstance(forward_pe, (int, float)) else "N/A", "tone": "bright_yellow"},
+        {"label": "Price",        "value": _fmt_price(price),          "tone": "bright_cyan"},
+        {"label": "Daily change", "value": _fmt_change(change),        "tone": change_tone},
+        {"label": "Market cap",   "value": _fmt_market_cap(market_cap), "tone": "bright_magenta"},
+        {"label": "P/E",          "value": _fmt_pe(pe),                "tone": "bright_yellow"},
+        {"label": "Forward P/E",  "value": _fmt_pe(forward_pe),        "tone": "bright_yellow"},
     ]
     footer = None
     if snapshot.get("sector") or snapshot.get("industry"):
@@ -256,24 +270,19 @@ def make_52w_range_block(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 def make_price_comparison_block(stocks: list[dict[str, Any]], title: str | None = None) -> dict[str, Any]:
     columns = ["Ticker", "Price", "Daily Chg", "Market Cap", "P/E", "Forward P/E", "52W High", "52W Low"]
-    rows = []
-    for stock in stocks:
-        market_cap = stock.get("market_cap")
-        if isinstance(market_cap, (int, float)):
-            market_cap_value = f"${market_cap / 1_000_000_000_000:.2f}T" if market_cap >= 1_000_000_000_000 else f"${market_cap / 1_000_000_000:.2f}B"
-        else:
-            market_cap_value = "N/A"
-        change = stock.get("change_percent")
-        rows.append([
+    rows = [
+        [
             stock.get("ticker"),
-            f"${stock['price']:.2f}" if isinstance(stock.get("price"), (int, float)) else "N/A",
-            f"{change:+.2f}%" if isinstance(change, (int, float)) else "N/A",
-            market_cap_value,
-            f"{stock['pe_ratio']:.2f}" if isinstance(stock.get("pe_ratio"), (int, float)) else "N/A",
-            f"{stock['forward_pe']:.2f}" if isinstance(stock.get("forward_pe"), (int, float)) else "N/A",
-            f"${stock['week_52_high']:.2f}" if isinstance(stock.get("week_52_high"), (int, float)) else "N/A",
-            f"${stock['week_52_low']:.2f}" if isinstance(stock.get("week_52_low"), (int, float)) else "N/A",
-        ])
+            _fmt_price(stock.get("price")),
+            _fmt_change(stock.get("change_percent")),
+            _fmt_market_cap(stock.get("market_cap")),
+            _fmt_pe(stock.get("pe_ratio")),
+            _fmt_pe(stock.get("forward_pe")),
+            _fmt_price(stock.get("week_52_high")),
+            _fmt_price(stock.get("week_52_low")),
+        ]
+        for stock in stocks
+    ]
     return make_table_block(columns, rows, title or "Comparison")
 
 
@@ -291,7 +300,7 @@ def make_change_barchart_block(stocks: list[dict[str, Any]], title: str | None =
             items.append({
                 "label": stock.get("ticker") or "?",
                 "value": float(change),
-                "display_value": f"{change:+.2f}%",
+                "display_value": _fmt_change(change),
                 "color": "bright_green" if change >= 0 else "bright_red",
             })
     return make_barchart_block(items, title or "Daily change chart", unit="%", summary="Daily percentage move by ticker")
@@ -305,7 +314,7 @@ def make_market_cap_barchart_block(stocks: list[dict[str, Any]], title: str | No
             items.append({
                 "label": stock.get("ticker") or "?",
                 "value": float(market_cap),
-                "display_value": f"${market_cap / 1_000_000_000_000:.2f}T" if market_cap >= 1_000_000_000_000 else f"${market_cap / 1_000_000_000:.2f}B",
+                "display_value": _fmt_market_cap(market_cap),
                 "color": "bright_cyan",
             })
     return make_barchart_block(items, title or "Market cap chart", unit="market cap", summary="Relative company size")

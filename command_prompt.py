@@ -12,6 +12,7 @@ from prompt_toolkit.styles import Style
 COMMAND_SPECS = {
     "/help": "Show command help",
     "/models": "Switch AI provider or model",
+    "/clear": "Clear conversation history",
     "/quit": "Exit StockSensei",
 }
 

@@ -40,6 +40,7 @@ def _show_help() -> None:
 ## Commands
 
 - `/models` — switch AI provider or model
+- `/clear` — clear conversation history
 - `/help` — show this help
 - `/quit` — exit StockSensei
 
@@ -201,7 +202,8 @@ def main():
     print(f"{CYAN}Using: {YELLOW}{label}{RESET}")
     print(
         f"{CYAN}Ask me anything about stocks. Type {YELLOW}/models{CYAN} to switch provider/model, "
-        f"{YELLOW}/help{CYAN} for commands, or 'exit' to quit.{RESET}\n"
+        f"{YELLOW}/clear{CYAN} to clear conversation history and reset the terminal, "
+        f"{YELLOW}/help{CYAN} for commands, or {YELLOW}/quit{CYAN} to quit.{RESET}\n"
     )
 
     while True:
@@ -214,7 +216,7 @@ def main():
         if not user_input:
             continue
 
-        if user_input.lower() in ["exit", "quit", "q", "/quit"]:
+        if user_input.lower() == "/quit":
             print(f"\n{GREEN}Goodbye! Happy investing!{RESET}\n")
             break
 
@@ -223,6 +225,12 @@ def main():
             agent, label = _build_agent(config)
             run_config = _new_run_config()
             print(f"{CYAN}Now using: {YELLOW}{label}{RESET}\n")
+            continue
+
+        if user_input.lower() == "/clear":
+            run_config = _new_run_config()
+            console.clear()
+            print(f"{GREEN}Conversation cleared.{RESET}\n")
             continue
 
         if user_input.lower() in ["/help", "help"]:

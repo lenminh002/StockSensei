@@ -277,4 +277,5 @@ def build_history_chart_visual(ticker: str, period: str = "1mo") -> dict:
 def build_news_visual(ticker: str) -> dict:
     """Build a render-ready news list block from recent headlines for a ticker."""
     news = fetch_news_headlines(ticker)
-    return {"block": make_news_block(news.get("headlines", []), ticker=news.get("ticker"), title=f"News for {news.get('ticker', normalize_ticker(ticker))}")}
+    symbol = news.get("ticker") or normalize_ticker(ticker)
+    return {"block": make_news_block(news.get("headlines", []), ticker=symbol, title=f"News for {symbol}")}
