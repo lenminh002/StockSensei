@@ -356,13 +356,31 @@ def make_json_fallback_response(raw_text: str, error: str | None = None) -> AIRe
 _JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 
+def _normalize_response_dict(data: Any) -> Any:
+    if not isinstance(data, dict):
+        return data
+    blocks = data.get("blocks")
+    if isinstance(blocks, list):
+        normalized = []
+        for block in blocks:
+            if isinstance(block, str):
+                try:
+                    normalized.append(json.loads(block))
+                    continue
+                except json.JSONDecodeError:
+                    pass
+            normalized.append(block)
+        data = {**data, "blocks": normalized}
+    return data
+
+
 def parse_ai_response(raw: Any) -> AIResponse:
     if isinstance(raw, AIResponse):
         return raw
     if isinstance(raw, BaseModel):
-        return AIResponse.model_validate(raw.model_dump())
+        return AIResponse.model_validate(_normalize_response_dict(raw.model_dump()))
     if isinstance(raw, dict):
-        return AIResponse.model_validate(raw)
+        return AIResponse.model_validate(_normalize_response_dict(raw))
     if isinstance(raw, str):
         stripped = raw.strip()
         candidates = [stripped]
@@ -371,7 +389,7 @@ def parse_ai_response(raw: Any) -> AIResponse:
             candidates.insert(0, match.group(1))
         for candidate in candidates:
             try:
-                return AIResponse.model_validate(json.loads(candidate))
+                return AIResponse.model_validate(_normalize_response_dict(json.loads(candidate)))
             except (json.JSONDecodeError, ValidationError):
                 continue
         return make_json_fallback_response(stripped)

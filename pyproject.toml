@@ -1,9 +1,21 @@
 [project]
 name = "stocksensei"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "AI-powered terminal stock analyzer with pluggable LLM providers"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Le Nguyen Minh", email = "lenminh2007@gmail.com"}]
 requires-python = ">=3.13"
+keywords = ["stocks", "finance", "cli", "llm", "langchain", "yfinance", "terminal"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "langchain>=1.2.15",
     "langchain-openai>=1.1.14",
@@ -19,8 +31,17 @@ dependencies = [
     "yfinance>=1.3.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/lenminh002/StockSensei"
+Repository = "https://github.com/lenminh002/StockSensei"
+Issues = "https://github.com/lenminh002/StockSensei/issues"
+
 [project.scripts]
 stocksensei = "main:main"
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools]
-py-modules = ["main", "agent", "tools", "config", "utils", "ui_blocks", "command_prompt", "providers"]
+py-modules = ["main", "agent", "tools", "config", "utils", "ui_blocks", "command_prompt", "providers", "runner"]

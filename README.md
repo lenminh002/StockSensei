@@ -1,5 +1,9 @@
 # StockSensei 📈
 
+[![PyPI version](https://img.shields.io/pypi/v/stocksensei)](https://pypi.org/project/stocksensei/)
+[![Monthly Downloads](https://img.shields.io/pypi/dm/stocksensei)](https://pypistats.org/packages/stocksensei)
+[![Python 3.13+](https://img.shields.io/pypi/pyversions/stocksensei)](https://pypi.org/project/stocksensei/)
+
 StockSensei is an intelligent, AI-powered **terminal CLI application** that acts as your personal expert financial analyst — running entirely inside your terminal. Built with Python, LangChain, and `yfinance`, it lets you query real-time stock data, compare companies, render structured terminal visuals, and read market news using plain natural language. No browser. No dashboard. Just your terminal.
 
 ---
@@ -49,32 +53,40 @@ Here are a few examples of StockSensei's terminal UI in action:
 
 ## ⚙️ Prerequisites
 
-StockSensei uses [`uv`](https://docs.astral.sh/uv/) for installation. If you don't have it yet, install it first:
-
-**Mac/Linux:**
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-**Windows (PowerShell):**
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Once installed, restart your terminal to make sure `uv` is available.
+- **Python 3.13+** — required regardless of install method.
+- **pip** or **uv** — either works for installation (see below).
 
 ---
 
 ## 🚀 Installation & Setup
 
-**The Easiest Way (Global Install)**
-Install StockSensei in a single command directly from GitHub. No cloning required:
-
+**Using pip (standard)**
 ```bash
-uv tool install git+https://github.com/lenminh002/StockSensei.git
+pip install stocksensei
 ```
 
-Then just run it from anywhere:
+**Using uv (faster)**
+
+If you prefer [`uv`](https://docs.astral.sh/uv/), install it first if you don't have it:
+
+Mac/Linux:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Windows (PowerShell):
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Then install as a global tool:
+```bash
+uv tool install stocksensei
+```
+
+---
+
+Then run it from anywhere:
 ```bash
 stocksensei
 ```
@@ -84,13 +96,18 @@ On first launch, StockSensei will walk you through selecting an AI provider and 
 ---
 
 **Updating to the Latest Version**
-To update StockSensei to the newest version:
 
+With pip:
+```bash
+pip install --upgrade stocksensei
+```
+
+With uv:
 ```bash
 uv tool upgrade stocksensei
 ```
 
-*(If that doesn't pick up the latest changes, force a reinstall: `uv tool install --force git+https://github.com/lenminh002/StockSensei.git`)*
+*(For the absolute latest before a PyPI release: `uv tool install git+https://github.com/lenminh002/StockSensei.git`)*
 
 ---
 
@@ -99,7 +116,7 @@ To modify the code or contribute:
 ```bash
 git clone https://github.com/lenminh002/StockSensei.git
 cd StockSensei
-uv sync
+uv sync       # or: pip install -e .
 uv run main.py
 ```
 
@@ -226,9 +243,24 @@ This contract means output is deterministic, safe to render, and consistent rega
 
 ---
 
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+© 2025 Minh Nguyen Le, Minh Le Hoang
+
+---
+
 ## 🗑️ Uninstall
 
 **1. Uninstall the CLI tool:**
+
+With pip:
+```bash
+pip uninstall stocksensei
+```
+
+With uv:
 ```bash
 uv tool uninstall stocksensei
 ```
