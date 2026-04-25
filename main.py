@@ -3,7 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import random
+import warnings
 from uuid import uuid4
+
+warnings.filterwarnings("ignore", message=".*non-text parts.*", category=UserWarning)
 
 from dotenv import find_dotenv, load_dotenv
 from rich.console import Console

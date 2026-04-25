@@ -32,18 +32,55 @@ def save_config(config: dict) -> None:
         pass
 
 
-def _validate_api_key(base_url: str, api_key: str) -> bool:
-    """Check if the provided API key is valid for the given OpenAI-compatible endpoint."""
+def _validate_api_key(provider_name: str, base_url: str, api_key: str) -> bool:
+    """Check if the provided API key is valid for the given provider."""
+    is_local = provider_name == "ollama" or "localhost" in base_url or "127.0.0.1" in base_url
+
+    if not api_key:
+        return is_local
+
+    if provider_name == "anthropic":
+        import httpx
+        try:
+            r = httpx.get(
+                "https://api.anthropic.com/v1/models",
+                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+                timeout=10,
+            )
+            if r.status_code in (401, 403):
+                return False
+            return r.status_code < 500
+        except (httpx.NetworkError, httpx.TimeoutException, OSError):
+            return True
+
+    if provider_name == "gemini":
+        import httpx
+        try:
+            r = httpx.get(
+                f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
+                timeout=10,
+            )
+            if r.status_code in (400, 401, 403):
+                return False
+            return True
+        except (httpx.NetworkError, httpx.TimeoutException, OSError):
+            return True
+
     import openai
     try:
-        client = openai.OpenAI(api_key=api_key or "not-needed", base_url=base_url)
+        client = openai.OpenAI(api_key=api_key, base_url=base_url)
         client.models.list()
         return True
-    except openai.AuthenticationError:
+    except (openai.AuthenticationError, openai.PermissionDeniedError):
         return False
-    except Exception:
-        # Network error or provider doesn't support /models — don't block the user.
+    except (openai.APIConnectionError, openai.APITimeoutError):
         return True
+    except openai.APIStatusError as e:
+        if e.status_code in (401, 403):
+            return False
+        return True
+    except Exception:
+        return False
 
 
 def _add_provider_interactive(config: dict) -> dict:
@@ -75,7 +112,7 @@ def _add_provider_interactive(config: dict) -> dict:
             default="",
         ).strip()
         print(f"{YELLOW}Validating...{RESET}")
-        if _validate_api_key(base_url, api_key):
+        if _validate_api_key(provider_name, base_url, api_key):
             break
         print(f"{RED}Invalid API key. Try again.{RESET}\n")
 
