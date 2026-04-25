@@ -1,6 +1,6 @@
 # StockSensei 📈
 
-StockSensei is an intelligent, AI-powered **terminal CLI application** that acts as your personal expert financial analyst — running entirely inside your terminal. Built with Python, LangChain, and `yfinance`, it lets you query real-time stock data, compare companies, generate ASCII price charts, and read market news using plain natural language. No browser. No dashboard. Just your terminal.
+StockSensei is an intelligent, AI-powered **terminal CLI application** that acts as your personal expert financial analyst — running entirely inside your terminal. Built with Python, LangChain, and `yfinance`, it lets you query real-time stock data, compare companies, render structured terminal visuals, and read market news using plain natural language. No browser. No dashboard. Just your terminal.
 
 ---
 
@@ -8,11 +8,14 @@ StockSensei is an intelligent, AI-powered **terminal CLI application** that acts
 
 - **🖥️ Runs Entirely in Your Terminal** — A first-class command-line experience built for developers and traders who live in the terminal. Launch it globally with one command from any directory.
 - **💬 Natural Language Interaction** — Ask questions the way you think: *"Is NVDA a better buy than AAPL right now?"* or *"Show me Tesla's trend over the last 3 months."*
-- **📊 ASCII Price Charts** — Visualize historical price trends right in your terminal with a generated scatter chart, sparkline trend indicator, and annotated date range.
-- **📋 Beautiful Data Tables** — Side-by-side stock comparisons are rendered as clean, properly aligned tables using `rich` — no more ugly pipe characters.
+- **📊 Structured Visual Blocks** — Cards, bars, tables, sparklines, and news lists are rendered from a structured JSON output contract — not fragile model-authored markdown.
+- **📋 Deterministic Terminal Visuals** — Comparison tables and stock snapshots render consistently with `rich` — no more ugly pipe characters or misaligned columns.
 - **📡 Real-Time Market Data** — Live prices, daily % changes, market caps, P/E ratios, 52-week highs/lows, and more via `yfinance`.
 - **📰 News Integration** — Fetch the latest headlines for any stock or company.
 - **🧠 Conversational Memory** — The agent remembers context within your session, so follow-up questions just work.
+- **🧱 JSON Output Contract** — The AI returns a structured response schema with a message plus ordered UI blocks, making rendering and fallback behavior safe and predictable.
+- **⚡ Animated Status Feedback** — StockSensei shows a single animated status line (with tool-specific messages) while it works — no cluttered logs.
+- **⌨️ Slash-Command Completion** — In interactive terminals, typing `/` opens a styled autocomplete dropdown for `/help`, `/models`, `/clear`, and `/quit`, powered by `prompt-toolkit`.
 - **🤖 Multi-Provider AI Support** — Choose from OpenAI, Anthropic, Gemini, Groq, DeepSeek, OpenRouter, Ollama, or any custom OpenAI-compatible endpoint. Switch providers mid-session with `/models`.
 - **🔐 Zero-Config Setup** — On first launch, StockSensei walks you through picking a provider and saving your API key globally — so you never have to set it again.
 
@@ -24,7 +27,7 @@ Here are a few examples of StockSensei's terminal UI in action:
 
 ![StockSensei Demonstration 1](./assets/demo.png)
 ![StockSensei Demonstration 2](./assets/demo2.png)
-![StockSensei Demonstration 5](./assets/demo5.png) 
+![StockSensei Demonstration 5](./assets/demo5.png)
 
 ---
 
@@ -34,10 +37,11 @@ Here are a few examples of StockSensei's terminal UI in action:
 |---|---|---|
 | Language | Python >= 3.13 | Core runtime |
 | Financial Data | [yfinance](https://github.com/ranaroussi/yfinance) | Real-time prices, OHLC history, news, company info |
-| AI Framework | [LangChain](https://github.com/langchain-ai/langchain) | LLM abstractions, prompt templates, tool-calling agent |
+| AI Framework | [LangChain](https://github.com/langchain-ai/langchain) | Tool-calling agent and structured output |
 | LLM Providers | OpenAI, Anthropic, Gemini, Groq, DeepSeek, OpenRouter, Ollama | Swappable AI backends via `/models` |
 | Agent State | [LangGraph](https://github.com/langchain-ai/langgraph) | Conversation memory and session checkpointing |
-| Terminal UI | [Rich](https://github.com/Textualize/rich) | Beautiful markdown tables and formatted output |
+| Terminal UI | [Rich](https://github.com/Textualize/rich) | Cards, tables, panels, bars, and live status |
+| Interactive Input | [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) | Slash-command completion and terminal prompt UX |
 | Environment | `python-dotenv` | Secure `.env` loading for local development |
 | Package Manager | `uv` | Fast dependency resolution and global CLI installation |
 
@@ -63,7 +67,7 @@ Once installed, restart your terminal to make sure `uv` is available.
 
 ## 🚀 Installation & Setup
 
-**The Easiest Way (Global Install)**  
+**The Easiest Way (Global Install)**
 Install StockSensei in a single command directly from GitHub. No cloning required:
 
 ```bash
@@ -79,7 +83,7 @@ On first launch, StockSensei will walk you through selecting an AI provider and 
 
 ---
 
-**Updating to the Latest Version**  
+**Updating to the Latest Version**
 To update StockSensei to the newest version:
 
 ```bash
@@ -90,7 +94,7 @@ uv tool upgrade stocksensei
 
 ---
 
-**Developer Setup (Local Cloning)**  
+**Developer Setup (Local Cloning)**
 To modify the code or contribute:
 ```bash
 git clone https://github.com/lenminh002/StockSensei.git
@@ -110,13 +114,27 @@ You: nvidia vs apple
 StockSensei: [Renders a comparison table with price, P/E, market cap, 52w range]
 
 You: show me nvda's chart for the last 3 months
-StockSensei: [Draws an ASCII price chart with date range and trend indicator]
+StockSensei: [Draws a sparkline trend chart with annotated date range]
 
 You: what's the latest news on tesla?
 StockSensei: [Lists the 10 most recent headlines]
+
+You: price of nvda
+StockSensei: [Shows a snapshot card with live price and daily change]
 ```
 
-Type `exit`, `quit`, or `q` to close the app.
+Type `exit`, `quit`, `q`, or `/quit` to close the app.
+
+### Commands
+
+```text
+/models   — switch AI provider or model
+/clear    — clear conversation history and reset the terminal
+/help     — show available commands and example prompts
+/quit     — exit StockSensei
+```
+
+In an interactive terminal, typing `/` opens an autocomplete dropdown with all available commands and their descriptions.
 
 ### Switching Providers & Models
 
@@ -146,6 +164,43 @@ Your selection is saved to `~/.stocksensei_config.json` and remembered across se
 
 ---
 
+## 🧱 Structured Output Contract
+
+StockSensei uses a strict JSON output contract. The AI always returns a structured response shaped like:
+
+```json
+{
+  "message": "Short explanation for the user.",
+  "blocks": [
+    {
+      "type": "metric_card",
+      "title": "AAPL snapshot",
+      "subtitle": "Apple Inc.",
+      "items": [
+        {"label": "Price", "value": "$201.68", "tone": "bright_cyan"},
+        {"label": "Daily change", "value": "+1.23%", "tone": "bright_green"},
+        {"label": "Market cap", "value": "$3.01T", "tone": "bright_magenta"},
+        {"label": "P/E", "value": "33.42", "tone": "bright_yellow"}
+      ]
+    },
+    {
+      "type": "range_bar",
+      "title": "AAPL 52-week range",
+      "minimum_label": "Low $170",
+      "maximum_label": "High $220",
+      "current_label": "Current $201.68",
+      "position": 0.73
+    }
+  ]
+}
+```
+
+Supported block types: `text`, `metric_card`, `table`, `barchart`, `range_bar`, `sparkline`, `news`.
+
+This contract means output is deterministic, safe to render, and consistent regardless of which AI provider is active.
+
+---
+
 ## 🤖 Supported Providers
 
 | Provider | Models |
@@ -164,6 +219,9 @@ Your selection is saved to `~/.stocksensei_config.json` and remembered across se
 ## 📝 Notes
 
 - **Config file:** Provider settings and API keys are stored in `~/.stocksensei_config.json`.
+- **Tool architecture:** Market-data tools return clean structured data; visual builder tools return render-ready block payloads; terminal rendering is handled in the CLI layer.
+- **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, bar charts, range bars, sparklines, and news lists.
+- **Fallback handling:** If the AI output cannot be parsed as a structured response, StockSensei safely falls back to a plain text block rather than crashing.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
 
 ---

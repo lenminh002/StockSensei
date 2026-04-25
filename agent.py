@@ -1,88 +1,83 @@
-from langgraph.checkpoint.memory import MemorySaver
-from langchain.chat_models import init_chat_model
 from langchain.agents import create_agent
-
-from langchain_core.prompts import PromptTemplate
+from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import MemorySaver
 
 from tools import (
+    build_52w_range_visual,
+    build_change_chart_visual,
+    build_history_chart_visual,
+    build_market_cap_chart_visual,
+    build_news_visual,
+    build_price_chart_visual,
+    build_price_comparison_visual,
+    build_snapshot_card_visual,
+    build_summary_comparison_visual,
+    compare_stocks,
+    compare_stocks_summary,
+    get_company_summary,
+    get_historical_data,
+    get_news,
+    get_price,
+    get_stock_summary,
+)
+from ui_blocks import AI_RESPONSE_SCHEMA
+
+TOOLS = [
     get_price,
     get_stock_summary,
     get_company_summary,
     get_historical_data,
     get_news,
     compare_stocks,
-    compare_stocks_summary
-)
+    compare_stocks_summary,
+    build_snapshot_card_visual,
+    build_52w_range_visual,
+    build_price_comparison_visual,
+    build_summary_comparison_visual,
+    build_price_chart_visual,
+    build_change_chart_visual,
+    build_market_cap_chart_visual,
+    build_history_chart_visual,
+    build_news_visual,
+]
 
-tools = [get_price, get_stock_summary, get_company_summary, get_historical_data, get_news, compare_stocks, compare_stocks_summary]
+SYSTEM_PROMPT = """
+You are StockSensei, a concise stock research assistant for terminal users.
 
-prompt = PromptTemplate.from_template("""
-You are StockSensei, an expert financial analyst with a flair for rich terminal presentation.
-You help users with stock prices, company info, historical data, news, and comparisons.
-Always be concise and confident. If a ticker is invalid, let the user know politely.
-Never make up stock data — always use your tools.
+Core rules:
+- Never invent financial data. If the user asks for market facts, use tools.
+- Tools return structured dictionaries. Read the fields carefully and summarize them clearly.
+- If a tool reports an error or missing data, explain that plainly instead of guessing.
+- Keep a neutral tone and avoid overstating certainty.
+- Do not expose chain-of-thought, hidden reasoning, or internal scratchpad content.
 
-CRITICAL INSTRUCTIONS - TOKEN SAVING & MULTI-OUTPUT STRATEGY:
-- Tools return structured JSON objects (dicts). Use the values as context for your analysis.
-- Do NOT repeat or restate raw data from tools in your final answer — format it visually instead.
-- For complex questions (e.g., "Which is a better buy?"), provide a concise qualitative financial analysis based on the data.
-- Simply output your financial reasoning.
+Structured output rules:
+- Your final answer must match the AIResponse schema exactly.
+- Fill `message` with a short explanation or takeaway for the user.
+- Fill `blocks` with ordered UI blocks the terminal can render deterministically.
+- Prefer tool-built visual payloads when a chart, news list, or comparison table would help.
+- If you use a visual builder tool that returns `{\"block\": ...}`, copy the inner `block` object into your final `blocks` array.
+- If no visual is needed, return an empty `blocks` array or a simple text block.
 
-VISUAL PRESENTATION INSTRUCTIONS (VERY IMPORTANT):
-You are running in a terminal that supports ASCII art. Wherever it enhances clarity, you MUST use:
-1. ASCII Bar Charts — For comparing values (e.g., P/E ratios, market caps, % changes across stocks).
-   Example:
-   AAPL ████████████ $270
-   NVDA ██████████████████ $890
-
-2. Markdown Tables — For showing structured multi-field data side by side (e.g., comparing two stocks).
-   Example:
-   | Metric     | AAPL     | NVDA     |
-   |------------|----------|----------|
-   | Price      | $270.23  | $890.45  |
-   | P/E Ratio  | 34.1     | 68.2     |
-
-3. Spark-line Trend Indicators — For hinting at price direction.
-   Example: AAPL trend: ▁▂▃▅▆▇█ (bullish)
-
-USE THESE VISUALS PROACTIVELY. Any time you have 2+ data points to compare, a table or chart is always clearer than a paragraph of text.
-
-You have access to the following tools:
-{tools}
-
-FORMATTING INSTRUCTIONS:
-Always use these exact literal tags in your final answer so our parser can color them:
-- <BLUE>TICKER<RESET> for ticker names. (e.g., <BLUE>NVDA<RESET>)
-- <YELLOW>$PRICE<RESET> for money values. (e.g., <YELLOW>$201.68<RESET>)
-- <GREEN>▲CHANGE%<RESET> or <RED>▼CHANGE%<RESET> for direction. (e.g., <GREEN>▲1.68%<RESET>)
-
-CRITICAL: Do NOT use any color tags (<BLUE>, <YELLOW>, etc.) inside markdown table cells.
-Color tags break table alignment. Use them ONLY in plain text outside of tables.
-
-Use this format:
-Thought: what do I need to do?
-Action: the tool name
-Action Input: the input to the tool
-Observation: the result
-... repeat as needed ...
-Final Answer: your concise analysis using the formatting tags and visuals above!
-
-Tool names available: 
-{tool_names}
-
-Begin!
-Question: {input}
-Thought: {agent_scratchpad}
-""")
-
+Visual guidance:
+- For a single stock snapshot, prefer `build_snapshot_card_visual` and `build_52w_range_visual`, and usually include both.
+- For comparisons, include at least one precise table/card and at least one bar-style chart.
+- For comparisons, prefer `build_price_comparison_visual` and/or `build_summary_comparison_visual` plus one or more of `build_price_chart_visual`, `build_change_chart_visual`, and `build_market_cap_chart_visual`.
+- Prefer cards and bars over standalone sparkline panels unless the user explicitly asks for a chart or trend view.
+- For price-trend/history requests, `build_history_chart_visual` is available, but use it sparingly.
+- For news requests, prefer `build_news_visual`.
+- For simple factual answers, a short message may be enough.
+""".strip()
 
 memory = MemorySaver()
 
 
 def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: str):
-    """Instantiate and return the LangGraph agent equipped with the defined tools and prompt."""
+    """Instantiate and return the LangGraph agent equipped with the defined tools."""
     if langchain_provider == "google_genai":
         provider_kwargs = {"google_api_key": api_key}
+    elif langchain_provider == "ollama":
+        provider_kwargs = {"base_url": base_url}
     else:
         provider_kwargs = {"api_key": api_key, "base_url": base_url}
 
@@ -92,10 +87,10 @@ def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: 
         temperature=0.3,
         **provider_kwargs,
     )
-    agent = create_agent(
+    return create_agent(
         model=model,
-        tools=tools,
-        system_prompt=prompt.template,
+        tools=TOOLS,
+        system_prompt=SYSTEM_PROMPT,
+        response_format=AI_RESPONSE_SCHEMA,
         checkpointer=memory,
     )
-    return agent
