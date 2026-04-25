@@ -1,5 +1,9 @@
 # StockSensei 📈
 
+[![PyPI version](https://img.shields.io/pypi/v/stocksensei)](https://pypi.org/project/stocksensei/)
+[![Monthly Downloads](https://img.shields.io/pypi/dm/stocksensei)](https://pypistats.org/packages/stocksensei)
+[![Python 3.13+](https://img.shields.io/pypi/pyversions/stocksensei)](https://pypi.org/project/stocksensei/)
+
 StockSensei is an intelligent, AI-powered **terminal CLI application** that acts as your personal expert financial analyst — running entirely inside your terminal. Built with Python, LangChain, and `yfinance`, it lets you query real-time stock data, compare companies, render structured terminal visuals, and read market news using plain natural language. No browser. No dashboard. Just your terminal.
 
 ---
@@ -68,10 +72,10 @@ Once installed, restart your terminal to make sure `uv` is available.
 ## 🚀 Installation & Setup
 
 **The Easiest Way (Global Install)**
-Install StockSensei in a single command directly from GitHub. No cloning required:
+Install StockSensei in a single command from PyPI. No cloning required:
 
 ```bash
-uv tool install git+https://github.com/lenminh002/StockSensei.git
+uv tool install stocksensei
 ```
 
 Then just run it from anywhere:
@@ -90,7 +94,7 @@ To update StockSensei to the newest version:
 uv tool upgrade stocksensei
 ```
 
-*(If that doesn't pick up the latest changes, force a reinstall: `uv tool install --force git+https://github.com/lenminh002/StockSensei.git`)*
+*(Alternatively, install directly from GitHub for the absolute latest: `uv tool install git+https://github.com/lenminh002/StockSensei.git`)*
 
 ---
 
@@ -223,6 +227,14 @@ This contract means output is deterministic, safe to render, and consistent rega
 - **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, bar charts, range bars, sparklines, and news lists.
 - **Fallback handling:** If the AI output cannot be parsed as a structured response, StockSensei safely falls back to a plain text block rather than crashing.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+© 2025 Minh Nguyen Le, Minh Le Hoang
 
 ---
 
