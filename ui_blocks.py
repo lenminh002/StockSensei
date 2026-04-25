@@ -287,9 +287,21 @@ def make_price_comparison_block(stocks: list[dict[str, Any]], title: str | None 
 
 
 def make_summary_comparison_block(stocks: list[dict[str, Any]], title: str | None = None) -> dict[str, Any]:
-    columns = ["Ticker", "Company", "Sector", "Industry"]
-    rows = [[stock.get("ticker"), stock.get("company_name") or "N/A", stock.get("sector") or "N/A", stock.get("industry") or "N/A"] for stock in stocks]
-    return make_table_block(columns, rows, title or "Company summary")
+    columns = ["Ticker", "Market Cap", "P/E", "Forward P/E", "52W High", "52W Low", "Sector", "Industry"]
+    rows = [
+        [
+            stock.get("ticker"),
+            _fmt_market_cap(stock.get("market_cap")),
+            _fmt_pe(stock.get("pe_ratio")),
+            _fmt_pe(stock.get("forward_pe")),
+            _fmt_price(stock.get("week_52_high")),
+            _fmt_price(stock.get("week_52_low")),
+            stock.get("sector") or "N/A",
+            stock.get("industry") or "N/A",
+        ]
+        for stock in stocks
+    ]
+    return make_table_block(columns, rows, title or "Valuation summary")
 
 
 def make_change_barchart_block(stocks: list[dict[str, Any]], title: str | None = None) -> dict[str, Any]:

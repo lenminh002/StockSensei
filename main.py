@@ -166,7 +166,7 @@ async def _invoke_agent_stream(agent, user_input: str, run_config: dict, live: L
                     final_state = output
 
         if final_state is None:
-            final_state = agent.invoke(payload, config=run_config)
+            raise RuntimeError("Agent stream completed without final state.")
         return final_state, rendered_blocks
     finally:
         stop_event.set()
@@ -216,7 +216,7 @@ def main():
         if not user_input:
             continue
 
-        if user_input.lower() == "/quit":
+        if user_input.lower() in ["exit", "quit", "q", "/quit"]:
             print(f"\n{GREEN}Goodbye! Happy investing!{RESET}\n")
             break
 

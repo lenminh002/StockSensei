@@ -123,7 +123,7 @@ You: price of nvda
 StockSensei: [Shows a snapshot card with live price and daily change]
 ```
 
-Type `exit`, `quit`, or `/quit` to close the app.
+Type `exit`, `quit`, `q`, or `/quit` to close the app.
 
 ### Commands
 
