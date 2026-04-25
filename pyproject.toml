@@ -23,4 +23,4 @@ dependencies = [
 stocksensei = "main:main"
 
 [tool.setuptools]
-py-modules = ["main", "agent", "tools", "config", "utils", "ui_blocks", "command_prompt", "providers"]
+py-modules = ["main", "agent", "tools", "config", "utils", "ui_blocks", "command_prompt", "providers", "runner"]
