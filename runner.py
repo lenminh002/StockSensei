@@ -3,6 +3,24 @@ from __future__ import annotations
 import asyncio
 import json
 import random
+import traceback
+
+_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _get_loop() -> asyncio.AbstractEventLoop:
+    """Return a process-lifetime event loop so async HTTP pools stay bound to a live loop.
+
+    Why: providers like google-genai/httpx pool connections whose transports are bound
+    to whichever loop opened them. Per-prompt asyncio.run() closes that loop, and the
+    next prompt explodes inside the pool's stale-connection cleanup with
+    'RuntimeError: Event loop is closed'.
+    """
+    global _loop
+    if _loop is None or _loop.is_closed():
+        _loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_loop)
+    return _loop
 
 from rich.console import Console
 from rich.live import Live
@@ -154,7 +172,7 @@ def run_agent(agent, user_input: str, run_config: dict, console: Console) -> AIR
     """Invoke the agent and return a fully parsed AIResponse, handling errors gracefully."""
     try:
         with Live(Text("StockSensei thinking.", style="dim cyan"), console=console, refresh_per_second=12, transient=True) as live:
-            state, rendered_blocks = asyncio.run(_invoke_agent_stream(agent, user_input, run_config, live))
+            state, rendered_blocks = _get_loop().run_until_complete(_invoke_agent_stream(agent, user_input, run_config, live))
         response = _extract_response_from_state(state)
         response.blocks = [
             block for block in response.blocks
@@ -164,7 +182,8 @@ def run_agent(agent, user_input: str, run_config: dict, console: Console) -> AIR
     except KeyboardInterrupt:
         raise
     except Exception as exc:
+        console.print(f"[dim red]{traceback.format_exc()}[/dim red]")
         return make_json_fallback_response(
-            f"The agent failed while producing a structured response.\n\nError: {exc}",
+            f"The agent failed while producing a structured response.\n\nError ({type(exc).__name__}): {exc}",
             error="structured-output fallback",
         )
