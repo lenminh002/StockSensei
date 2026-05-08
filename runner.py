@@ -179,7 +179,10 @@ async def _invoke_agent_stream(agent, user_input: str, run_config: dict, live: L
         return final_state, rendered_blocks
     finally:
         stop_event.set()
-        await status_task
+        try:
+            await status_task
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------
