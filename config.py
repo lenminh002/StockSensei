@@ -50,7 +50,7 @@ def _validate_api_key(provider_name: str, base_url: str, api_key: str) -> bool:
             if r.status_code in (401, 403):
                 return False
             return r.status_code < 500
-        except (httpx.NetworkError, httpx.TimeoutException, OSError):
+        except (httpx.RequestError, httpx.TimeoutException, OSError):
             return True
 
     if provider_name == "gemini":
@@ -63,7 +63,7 @@ def _validate_api_key(provider_name: str, base_url: str, api_key: str) -> bool:
             if r.status_code in (400, 401, 403):
                 return False
             return True
-        except (httpx.NetworkError, httpx.TimeoutException, OSError):
+        except (httpx.RequestError, httpx.TimeoutException, OSError):
             return True
 
     import openai
