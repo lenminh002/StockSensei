@@ -29,9 +29,9 @@ def _close_loop() -> None:
     if _loop is None:
         return
     try:
+        asyncio.set_event_loop(None)
         if not _loop.is_closed() and not _loop.is_running():
             _loop.close()
-        asyncio.set_event_loop(None)
     except RuntimeError:
         pass
     finally:
