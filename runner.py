@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import asyncio
 import json
 import random
@@ -21,6 +22,23 @@ def _get_loop() -> asyncio.AbstractEventLoop:
         _loop = asyncio.new_event_loop()
         asyncio.set_event_loop(_loop)
     return _loop
+
+
+def _close_loop() -> None:
+    global _loop
+    if _loop is None:
+        return
+    try:
+        if not _loop.is_closed() and not _loop.is_running():
+            _loop.close()
+        asyncio.set_event_loop(None)
+    except RuntimeError:
+        pass
+    finally:
+        _loop = None
+
+
+atexit.register(_close_loop)
 
 from rich.console import Console
 from rich.live import Live
