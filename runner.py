@@ -182,7 +182,7 @@ async def _invoke_agent_stream(agent, user_input: str, run_config: dict, live: L
         try:
             await status_task
         except Exception:
-            pass
+            traceback.print_exc()
 
 
 # ---------------------------------------------------------------------------
