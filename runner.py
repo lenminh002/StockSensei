@@ -186,6 +186,34 @@ async def _invoke_agent_stream(agent, user_input: str, run_config: dict, live: L
 
 
 # ---------------------------------------------------------------------------
+# API error classification
+# ---------------------------------------------------------------------------
+
+def _classify_api_error(exc: Exception) -> tuple[AIResponse | None, bool]:
+    """Return (clean_response, log_traceback) for well-known API errors.
+
+    Returns (None, True) for unexpected errors so the full traceback is logged.
+    """
+    msg = str(exc)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower() or "rate limit" in msg.lower():
+        return AIResponse(
+            message="Rate limit reached — please wait a moment and try again.",
+            blocks=[],
+        ), False
+    if "401" in msg or "403" in msg or "API_KEY_INVALID" in msg or "UNAUTHENTICATED" in msg:
+        return AIResponse(
+            message="Authentication failed. Check your API key with /models.",
+            blocks=[],
+        ), False
+    if "503" in msg or "UNAVAILABLE" in msg:
+        return AIResponse(
+            message="The AI provider is temporarily unavailable. Try again shortly.",
+            blocks=[],
+        ), False
+    return None, True
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -203,8 +231,10 @@ def run_agent(agent, user_input: str, run_config: dict, console: Console) -> AIR
     except KeyboardInterrupt:
         raise
     except Exception as exc:
-        console.print(f"[dim red]{traceback.format_exc()}[/dim red]")
-        return make_json_fallback_response(
+        clean_response, log_tb = _classify_api_error(exc)
+        if log_tb:
+            console.print(f"[dim red]{traceback.format_exc()}[/dim red]")
+        return clean_response or make_json_fallback_response(
             f"The agent failed while producing a structured response.\n\nError ({type(exc).__name__}): {exc}",
             error="structured-output fallback",
         )
