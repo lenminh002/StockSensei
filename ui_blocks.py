@@ -134,7 +134,7 @@ UIBlock = Annotated[
 
 class AIResponse(BaseModel):
     message: str = ""
-    blocks: list[UIBlock] = Field(default_factory=list)
+    blocks: list[Any] = Field(default_factory=list)
 
 
 AI_RESPONSE_SCHEMA = {
@@ -397,7 +397,18 @@ def parse_ai_response(raw: Any) -> AIResponse:
 
 
 def render_block(console: Console, block: UIBlock | dict[str, Any]) -> None:
-    block_obj = block if isinstance(block, BaseModel) else AIResponse.model_validate({"message": "", "blocks": [block]}).blocks[0]
+    try:
+        block_obj = block if isinstance(block, BaseModel) else AIResponse.model_validate({"message": "", "blocks": [block]}).blocks[0]
+    except ValidationError:
+        if isinstance(block, dict):
+            fallback = block.get("fallback") or block.get("text") or block.get("content")
+            title = block.get("title") or block.get("type") or "Visual Block"
+            if fallback:
+                console.print(Panel(Markdown(str(fallback)), title=str(title), title_align="left", border_style="bright_cyan", expand=False))
+            else:
+                console.print(Panel(json.dumps(block, indent=2, default=str), title=f"Unsupported block: {title}", title_align="left", border_style="yellow", expand=False))
+            return
+        raise
 
     if isinstance(block_obj, TextBlock):
         renderable = Markdown(block_obj.content)

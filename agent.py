@@ -72,7 +72,7 @@ Visual guidance:
 memory = MemorySaver()
 
 
-def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: str):
+def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: str, tools=None):
     """Instantiate and return the LangGraph agent equipped with the defined tools."""
     if langchain_provider == "google_genai":
         provider_kwargs = {"google_api_key": api_key}
@@ -89,7 +89,7 @@ def get_agent(model_name: str, langchain_provider: str, api_key: str, base_url: 
     )
     return create_agent(
         model=model,
-        tools=TOOLS,
+        tools=tools or TOOLS,
         system_prompt=SYSTEM_PROMPT,
         response_format=AI_RESPONSE_SCHEMA,
         checkpointer=memory,

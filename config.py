@@ -2,21 +2,22 @@ import json
 import os
 from typing import Optional
 
-from rich.prompt import Prompt
+from utils import CYAN, GREEN, RED, RESET, YELLOW, ask_text, pick_option
 
-from utils import CYAN, GREEN, RED, RESET, YELLOW, pick_option
-
-CONFIG_PATH = os.path.expanduser("~/.stocksensei_config.json")
+CONFIG_DIR = os.path.expanduser("~/.config/stocksensei")
+CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+LEGACY_CONFIG_PATH = os.path.expanduser("~/.stocksensei_config.json")
 
 from providers import PROVIDER_PRESETS, get_langchain_provider
 
 
 def load_config() -> Optional[dict]:
     """Load the user's StockSensei configuration from the JSON file."""
-    if not os.path.exists(CONFIG_PATH):
+    path = CONFIG_PATH if os.path.exists(CONFIG_PATH) else LEGACY_CONFIG_PATH
+    if not os.path.exists(path):
         return None
     try:
-        with open(CONFIG_PATH) as f:
+        with open(path) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return None
@@ -24,6 +25,7 @@ def load_config() -> Optional[dict]:
 
 def save_config(config: dict) -> None:
     """Save the updated configuration to the JSON file with restricted file permissions."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
     try:
@@ -97,17 +99,17 @@ def _add_provider_interactive(config: dict) -> dict:
         base_url = PROVIDER_PRESETS[provider_name]["base_url"]
         models = list(PROVIDER_PRESETS[provider_name]["models"])
     else:
-        provider_name = Prompt.ask(f"{CYAN}Provider name{RESET}").strip() or "custom"
+        provider_name = ask_text(f"{CYAN}Provider name{RESET}").strip() or "custom"
         while True:
-            base_url = Prompt.ask(f"{CYAN}Base URL (OpenAI-compatible){RESET}").strip()
+            base_url = ask_text(f"{CYAN}Base URL (OpenAI-compatible){RESET}").strip()
             if base_url.startswith("http://") or base_url.startswith("https://"):
                 break
             print(f"{RED}Base URL must start with http:// or https://{RESET}")
-        raw = Prompt.ask(f"{CYAN}Comma-separated model IDs{RESET}").strip()
+        raw = ask_text(f"{CYAN}Comma-separated model IDs{RESET}").strip()
         models = [m.strip() for m in raw.split(",") if m.strip()]
 
     while True:
-        api_key = Prompt.ask(
+        api_key = ask_text(
             f"{CYAN}API key for {provider_name} (blank if not required){RESET}",
             default="",
         ).strip()
@@ -117,7 +119,7 @@ def _add_provider_interactive(config: dict) -> dict:
         print(f"{RED}Invalid API key. Try again.{RESET}\n")
 
     if not models:
-        raw = Prompt.ask(f"{CYAN}Comma-separated model IDs{RESET}").strip()
+        raw = ask_text(f"{CYAN}Comma-separated model IDs{RESET}").strip()
         models = [m.strip() for m in raw.split(",") if m.strip()]
 
     print(f"\n{YELLOW}Select default model for {provider_name}:{RESET}")

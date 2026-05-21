@@ -45,6 +45,8 @@ from rich.live import Live
 from rich.text import Text
 
 from ui_blocks import AIResponse, make_json_fallback_response, parse_ai_response, render_block
+from stocksensei.ui.terminal.renderers import render_block as render_terminal_block
+from stocksensei.core.events import BlockEvent, ErrorEvent, FinalEvent, StatusEvent, ToolEndEvent, ToolStartEvent
 from utils import stringify_message_content
 
 # ---------------------------------------------------------------------------
@@ -216,6 +218,31 @@ def _classify_api_error(exc: Exception) -> tuple[AIResponse | None, bool]:
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
+
+def run_service(service, user_input: str, session, console: Console) -> AIResponse:
+    """Consume the core event stream and render terminal progress/blocks."""
+    async def _consume(live: Live) -> AIResponse:
+        response: AIResponse | None = None
+        async for event in service.ask_events(user_input, session):
+            if isinstance(event, StatusEvent):
+                live.update(Text(f"StockSensei {event.message}...", style="dim cyan"))
+            elif isinstance(event, ToolStartEvent):
+                live.update(Text(f"StockSensei {event.message or event.name}...", style="dim cyan"))
+            elif isinstance(event, ToolEndEvent):
+                live.update(Text(f"StockSensei {event.message or event.name}...", style="dim cyan"))
+            elif isinstance(event, BlockEvent):
+                live.console.print()
+                render_terminal_block(live.console, event.block)
+                await asyncio.sleep(0.18)
+            elif isinstance(event, ErrorEvent) and event.response is not None:
+                response = event.response
+            elif isinstance(event, FinalEvent):
+                response = event.response
+        return response or make_json_fallback_response("No response available from the agent.")
+
+    with Live(Text("StockSensei thinking.", style="dim cyan"), console=console, refresh_per_second=12, transient=True) as live:
+        return _get_loop().run_until_complete(_consume(live))
+
 
 def run_agent(agent, user_input: str, run_config: dict, console: Console) -> AIResponse:
     """Invoke the agent and return a fully parsed AIResponse, handling errors gracefully."""

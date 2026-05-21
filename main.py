@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from uuid import uuid4
 
 warnings.filterwarnings("ignore", message=".*non-text parts.*", category=UserWarning)
 
@@ -9,31 +8,14 @@ from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
 from rich.markdown import Markdown
 
-from agent import get_agent
 from command_prompt import CommandPrompt
-from config import current_provider_info, ensure_config, switch_model_interactive
-from runner import run_agent
-from ui_blocks import render_response
+from config import switch_model_interactive
+from runner import run_service
+from stocksensei.core.service import StockSenseiService
+from stocksensei.ui.terminal.renderers import render_response
 from utils import CYAN, GREEN, RESET, YELLOW
 
 console = Console()
-
-
-# ---------------------------------------------------------------------------
-# Agent / session helpers
-# ---------------------------------------------------------------------------
-
-def _build_agent(config: dict):
-    """Construct LangChain agent instance using active configuration."""
-    name, model, lc_provider, base_url, api_key = current_provider_info(config)
-    agent = get_agent(model, lc_provider, api_key, base_url)
-    label = f"{name} / {model}"
-    return agent, label
-
-
-def _new_run_config() -> dict:
-    """Create fresh conversation thread id for session."""
-    return {"configurable": {"thread_id": f"stocksensei_{uuid4()}"}}
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +32,7 @@ def _show_help() -> None:
 - `/clear` — clear conversation history
 - `/help` — show this help
 - `/quit` — exit StockSensei
+- `/extensions` — show extension diagnostics
 
 ### Interactive input
 - Typing `/` in an interactive terminal opens slash-command completion suggestions.
@@ -74,9 +57,10 @@ def main():
     """Start main StockSensei application and terminal chat loop."""
     load_dotenv(find_dotenv(usecwd=True))
 
-    config = ensure_config()
-    agent, label = _build_agent(config)
-    run_config = _new_run_config()
+    service = StockSenseiService()
+    config = service.config
+    label = service.label
+    session = service.new_session()
     prompt = CommandPrompt()
 
     print(f"\n{GREEN}Hello, I'm StockSensei!{RESET}")
@@ -103,13 +87,13 @@ def main():
 
         if user_input.lower() in ["/models", "/model"]:
             config = switch_model_interactive(config)
-            agent, label = _build_agent(config)
-            run_config = _new_run_config()
+            label = service.rebuild_agent(config)
+            session = service.new_session()
             print(f"{CYAN}Now using: {YELLOW}{label}{RESET}\n")
             continue
 
         if user_input.lower() == "/clear":
-            run_config = _new_run_config()
+            session = service.new_session()
             console.clear()
             print(f"{GREEN}Conversation cleared.{RESET}\n")
             continue
@@ -118,8 +102,12 @@ def main():
             _show_help()
             continue
 
+        if user_input.lower() in ["/extensions", "/extensions list"]:
+            console.print_json(data=service.extensions.diagnostics())
+            continue
+
         try:
-            response = run_agent(agent, user_input, run_config, console)
+            response = run_service(service, user_input, session, console)
         except KeyboardInterrupt:
             print(f"\n{YELLOW}Interrupted.{RESET}\n")
             continue

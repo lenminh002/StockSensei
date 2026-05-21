@@ -14,6 +14,7 @@ COMMAND_SPECS = {
     "/models": "Switch AI provider or model",
     "/clear": "Clear conversation history",
     "/quit": "Exit StockSensei",
+    "/extensions": "Show extension diagnostics",
 }
 
 PROMPT_STYLE = Style.from_dict(
