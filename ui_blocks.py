@@ -5,7 +5,7 @@ import math
 import re
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_validator
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -130,6 +130,7 @@ UIBlock = Annotated[
     TextBlock | MetricCardBlock | TableBlock | SparklineBlock | BarChartBlock | RangeBarBlock | NewsBlock,
     Field(discriminator="type"),
 ]
+UI_BLOCK_ADAPTER = TypeAdapter(UIBlock)
 
 
 class AIResponse(BaseModel):
@@ -356,6 +357,17 @@ def make_json_fallback_response(raw_text: str, error: str | None = None) -> AIRe
 _JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 
+def _validate_block(block: Any) -> UIBlock | Any:
+    if isinstance(block, BaseModel):
+        return block
+    if isinstance(block, dict):
+        try:
+            return UI_BLOCK_ADAPTER.validate_python(block)
+        except ValidationError:
+            return block
+    return block
+
+
 def _normalize_response_dict(data: Any) -> Any:
     if not isinstance(data, dict):
         return data
@@ -365,11 +377,10 @@ def _normalize_response_dict(data: Any) -> Any:
         for block in blocks:
             if isinstance(block, str):
                 try:
-                    normalized.append(json.loads(block))
-                    continue
+                    block = json.loads(block)
                 except json.JSONDecodeError:
                     pass
-            normalized.append(block)
+            normalized.append(_validate_block(block))
         data = {**data, "blocks": normalized}
     return data
 
@@ -398,7 +409,7 @@ def parse_ai_response(raw: Any) -> AIResponse:
 
 def render_block(console: Console, block: UIBlock | dict[str, Any]) -> None:
     try:
-        block_obj = block if isinstance(block, BaseModel) else AIResponse.model_validate({"message": "", "blocks": [block]}).blocks[0]
+        block_obj = block if isinstance(block, BaseModel) else UI_BLOCK_ADAPTER.validate_python(block)
     except ValidationError:
         if isinstance(block, dict):
             fallback = block.get("fallback") or block.get("text") or block.get("content")
