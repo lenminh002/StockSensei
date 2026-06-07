@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+import traceback
 from typing import Any, Callable
 
 from rich.console import Console, Group
@@ -7,19 +9,15 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 
-from ui_blocks import (
-    AIResponse,
+from stocksensei.core.block_models import (
     BarChartBlock,
     CandlestickChartBlock,
     LineChartBlock,
-    MetricCardBlock,
-    NewsBlock,
-    RangeBarBlock,
-    SparklineBlock,
-    TableBlock,
-    TextBlock,
-    render_block as _render_block,
 )
+from stocksensei.core.responses import AIResponse
+
+# Import the fallback renderer from core (avoids circular import with the root ui_blocks facade).
+from stocksensei.core.block_renderer import render_block as _render_block
 
 Renderer = Callable[[Console, Any], None]
 
@@ -29,7 +27,6 @@ TERMINAL_RENDERERS: dict[str, Renderer] = {
     "text": _render_block,
     "metric_card": _render_block,
     "table": _render_block,
-    "sparkline": _render_block,
     "line_chart": lambda console, block: _render_line_chart(console, block),
     "barchart": lambda console, block: _render_column_chart(console, block),
     "candlestick_chart": lambda console, block: _render_candlestick_chart(console, block),
@@ -193,17 +190,36 @@ def _line_value(value: float, unit: str | None) -> str:
     return f"{value:,.2f}"
 
 
+def _render_chart_error(console: Console, title: str, reason: str, summary: str | None = None) -> None:
+    """Render a styled error panel when a chart cannot be displayed."""
+    lines = [f"[bright_red]\u26a0  Chart cannot be rendered.[/bright_red]"]
+    if reason:
+        lines.append(f"[dim]{reason}[/dim]")
+    if summary:
+        lines.append("")
+        lines.append(f"[bright_black]{summary}[/bright_black]")
+    console.print(Panel(
+        "\n".join(lines),
+        title=title,
+        title_align="left",
+        border_style="red",
+        expand=False,
+    ))
+
+
 def _render_candlestick_chart(console: Console, block: Any) -> None:
     block_obj = block if isinstance(block, CandlestickChartBlock) else CandlestickChartBlock.model_validate(block)
     title = block_obj.title or f"{block_obj.ticker or 'Ticker'} OHLC chart"
+
     if not block_obj.points:
-        _render_block(console, block_obj)
+        _render_chart_error(console, title, "No OHLC data available.", block_obj.summary)
         return
 
     try:
         canvas = _plotext_candlestick_canvas(console, block_obj)
-    except Exception:
-        _render_block(console, block_obj)
+    except Exception as exc:
+        traceback.print_exc(file=sys.stderr)
+        _render_chart_error(console, title, f"{type(exc).__name__}: {exc}", block_obj.summary)
         return
 
     parts = [Text.from_ansi(canvas)]
@@ -215,14 +231,16 @@ def _render_candlestick_chart(console: Console, block: Any) -> None:
 def _render_line_chart(console: Console, block: Any) -> None:
     block_obj = block if isinstance(block, LineChartBlock) else LineChartBlock.model_validate(block)
     title = block_obj.title or f"{block_obj.ticker or 'Ticker'} line chart"
+
     if not block_obj.points and not block_obj.series:
-        _render_block(console, block_obj)
+        _render_chart_error(console, title, "No data points available.", block_obj.summary)
         return
 
     try:
         canvas = _plotext_line_canvas(console, block_obj)
-    except Exception:
-        _render_block(console, block_obj)
+    except Exception as exc:
+        traceback.print_exc(file=sys.stderr)
+        _render_chart_error(console, title, f"{type(exc).__name__}: {exc}", block_obj.summary)
         return
 
     parts = [Text.from_ansi(canvas), _values_line(block_obj)]
@@ -234,14 +252,16 @@ def _render_line_chart(console: Console, block: Any) -> None:
 def _render_column_chart(console: Console, block: Any) -> None:
     block_obj = block if isinstance(block, BarChartBlock) else BarChartBlock.model_validate(block)
     title = block_obj.title or "Column chart"
+
     if not block_obj.items:
-        _render_block(console, block_obj)
+        _render_chart_error(console, title, "No data items available.", block_obj.summary)
         return
 
     try:
         canvas = _plotext_column_canvas(console, block_obj)
-    except Exception:
-        _render_block(console, block_obj)
+    except Exception as exc:
+        traceback.print_exc(file=sys.stderr)
+        _render_chart_error(console, title, f"{type(exc).__name__}: {exc}", block_obj.summary)
         return
 
     parts = [Text.from_ansi(canvas), _values_line(block_obj)]

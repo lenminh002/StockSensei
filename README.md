@@ -12,7 +12,7 @@ StockSensei is an intelligent, AI-powered **terminal CLI application** that acts
 
 - **🖥️ Runs Entirely in Your Terminal** — A first-class command-line experience built for developers and traders who live in the terminal. Launch it globally with one command from any directory.
 - **💬 Natural Language Interaction** — Ask questions the way you think: *"Is NVDA a better buy than AAPL right now?"* or *"Show me Tesla's trend over the last 3 months."*
-- **📊 Structured Visual Blocks** — Cards, bars, tables, sparklines, and news lists are rendered from a structured JSON output contract — not fragile model-authored markdown.
+- **📊 Structured Visual Blocks** — Cards, columns, lines, candlestick charts, tables, range bars, and news lists are rendered from a structured JSON output contract — not fragile model-authored markdown.
 - **📋 Deterministic Terminal Visuals** — Comparison tables and stock snapshots render consistently with `rich` — no more ugly pipe characters or misaligned columns.
 - **📡 Real-Time Market Data** — Live prices, daily % changes, market caps, P/E ratios, 52-week highs/lows, and more via `yfinance`.
 - **📰 News Integration** — Fetch the latest headlines for any stock or company.
@@ -181,7 +181,7 @@ Your choice: 1
 ✓ Switched to anthropic / claude-opus-4-7
 ```
 
-Your selection is saved to `~/.stocksensei_config.json` and remembered across sessions.
+Your selection is saved to `~/.config/stocksensei/config.json` (or legacy `~/.stocksensei_config.json`) and remembered across sessions.
 
 ---
 
@@ -216,9 +216,65 @@ StockSensei uses a strict JSON output contract. The AI always returns a structur
 }
 ```
 
-Supported block types: `text`, `metric_card`, `table`, `barchart`, `line_chart`, `candlestick_chart`, `range_bar`, `sparkline`, `news`.
+Supported block types: `text`, `metric_card`, `table`, `barchart`, `line_chart`, `candlestick_chart`, `range_bar`, `news`.
 
 This contract means output is deterministic, safe to render, and consistent regardless of which AI provider is active.
+
+---
+
+## 🏗️ Architecture
+
+StockSensei is designed with a clean separation of concerns, decoupling the AI core from the interactive terminal UI. This allows multiple user interfaces (like the CLI and a future Web UI) to share the exact same core logic, session checkpointer, tool executor, and provider definitions.
+
+```text
+stocksensei/
+  ├── core/            # StockSensei Core service, provider service, event/state logic
+  ├── registries/      # Extensible registries for tools and Visual Block schemas
+  ├── extensions/      # Trusted Python extension discovery and lifecycle manager
+  └── ui/
+      └── terminal/    # CLI REPL, prompt-toolkit configuration, and Rich block renderers
+```
+
+To maintain backward compatibility with legacy imports, the project root exports thin facades for modules like `ui_blocks`, `agent`, `tools`, `config`, `providers`, and `command_prompt`.
+
+---
+
+## 🔌 Extensibility & Extensions
+
+StockSensei supports **trusted Python extensions**, allowing developers to build custom data tools, custom visual blocks, and register callback hooks into the agent's lifecycle.
+
+### Discovery Locations
+Extensions are automatically discovered and loaded from:
+- **Project-Local:** `.stocksensei/extensions/` (requires a one-time trust prompt on first run)
+- **Global Config:** `~/.config/stocksensei/extensions/`
+- **System Paths & Package Entry Points**
+
+### Writing an Extension
+Create a Python file (e.g., `my_extension.py`) in one of the discovery folders. Declare an `activate(api)` function:
+
+```python
+def activate(api):
+    """
+    Activates the extension and registers tools, blocks, or hooks.
+    `api` is an instance of ExtensionAPI (api_version="0.x").
+    """
+    # 1. Register a custom data tool
+    @api.register_tool(name="get_sentiment_score")
+    def get_sentiment_score(ticker: str) -> dict:
+        # Custom logic to fetch stock sentiment
+        return {"ticker": ticker, "sentiment": "Bullish", "score": 0.85}
+
+    # 2. Register lifecycle hooks
+    @api.on("before_agent_run")
+    def before_run(session_id: str, prompt: str):
+        # Triggered before the agent starts executing a user query
+        pass
+
+    @api.on("after_agent_run")
+    def after_run(session_id: str, response: dict):
+        # Triggered after agent completes, allows mutating/logging response
+        pass
+```
 
 ---
 
@@ -239,9 +295,9 @@ This contract means output is deterministic, safe to render, and consistent rega
 
 ## 📝 Notes
 
-- **Config file:** Provider settings and API keys are stored in `~/.stocksensei_config.json`.
+- **Config file:** Provider settings and API keys are stored in `~/.config/stocksensei/config.json` (with backward-compatible reads from `~/.stocksensei_config.json`).
 - **Tool architecture:** Market-data tools return clean structured data; visual builder tools return render-ready block payloads; terminal rendering is handled in the CLI layer.
-- **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, column charts, line charts, candlestick charts, range bars, sparklines, and news lists.
+- **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, column charts, line charts, candlestick charts, range bars, and news lists.
 - **Fallback handling:** If the AI output cannot be parsed as a structured response, StockSensei safely falls back to a plain text block rather than crashing.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
 
@@ -273,10 +329,11 @@ uv tool uninstall stocksensei
 
 Mac/Linux:
 ```bash
-rm ~/.stocksensei_config.json
+rm -rf ~/.config/stocksensei/ ~/.stocksensei_config.json
 ```
 
 Windows (PowerShell):
 ```powershell
-Remove-Item "$HOME\.stocksensei_config.json"
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$HOME\.config\stocksensei"
+Remove-Item -Force -ErrorAction SilentlyContinue "$HOME\.stocksensei_config.json"
 ```

@@ -46,7 +46,7 @@ class ToolRegistry:
 
 
 def create_builtin_tool_registry() -> ToolRegistry:
-    from agent import TOOLS
+    from stocksensei.core.agent import TOOLS
 
     registry = ToolRegistry()
     registry.register_many(TOOLS)

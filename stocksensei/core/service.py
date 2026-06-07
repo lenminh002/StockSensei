@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import random
 import traceback
 from collections.abc import AsyncIterator
 from typing import Any
 
-from agent import get_agent
-from config import current_provider_info, ensure_config
-from runner import STATUS_LABELS, _classify_api_error, _extract_response_from_state, _tool_message
-from ui_blocks import AIResponse, make_json_fallback_response
+from stocksensei.core.agent import get_agent
+from stocksensei.core.config import current_provider_info, ensure_config
+from stocksensei.core.responses import AIResponse, make_json_fallback_response, parse_ai_response
 from utils import stringify_message_content
 
 from stocksensei.core.events import BlockEvent, ErrorEvent, FinalEvent, StatusEvent, ToolEndEvent, ToolStartEvent, StockSenseiEvent
@@ -19,6 +17,93 @@ from stocksensei.extensions.manager import ExtensionManager
 from stocksensei.registries.blocks import BlockRegistry, create_builtin_block_registry
 from stocksensei.registries.commands import CommandRegistry, create_builtin_command_registry
 from stocksensei.registries.tools import ToolRegistry, create_builtin_tool_registry
+
+
+# ---------------------------------------------------------------------------
+# Status animation labels — shown while the agent is working
+# ---------------------------------------------------------------------------
+
+STATUS_LABELS = [
+    "cooking",
+    "drawing",
+    "mewing",
+    "brewing",
+    "thinking",
+    "plotting",
+    "scheming",
+    "vibing",
+    "whisking",
+    "forging",
+    "mixing",
+    "stirring",
+]
+
+# ---------------------------------------------------------------------------
+# Tool-specific status messages — shown during individual tool calls
+# ---------------------------------------------------------------------------
+
+TOOL_MESSAGES = {
+    "get_price": ("Fetching live price", "Fetched live price"),
+    "get_stock_summary": ("Pulling stock summary", "Stock summary ready"),
+    "get_company_summary": ("Reading company profile", "Company profile ready"),
+    "get_historical_data": ("Loading price history", "Price history ready"),
+    "get_news": ("Scanning latest headlines", "Headlines ready"),
+    "compare_stocks": ("Comparing live quotes", "Quote comparison ready"),
+    "compare_stocks_summary": ("Comparing valuation data", "Valuation comparison ready"),
+    "build_snapshot_card_visual": ("Building snapshot card", "Snapshot card ready"),
+    "build_52w_range_visual": ("Building 52-week range", "52-week range ready"),
+    "build_price_comparison_visual": ("Building comparison table", "Comparison table ready"),
+    "build_summary_comparison_visual": ("Building company summary table", "Company summary table ready"),
+    "build_time_comparison_line_visual": ("Drawing comparison line chart", "Comparison line chart ready"),
+    "build_price_chart_visual": ("Drawing price columns", "Price columns ready"),
+    "build_change_chart_visual": ("Drawing daily change columns", "Daily change columns ready"),
+    "build_market_cap_chart_visual": ("Drawing market-cap columns", "Market-cap columns ready"),
+    "build_history_chart_visual": ("Drawing trend view", "Trend view ready"),
+    "build_line_chart_visual": ("Drawing line chart", "Line chart ready"),
+    "build_volume_chart_visual": ("Drawing volume columns", "Volume columns ready"),
+    "build_news_visual": ("Formatting news list", "News list ready"),
+}
+
+
+def _tool_message(name: str, phase: str) -> str:
+    """Return the appropriate status label for a tool call start or end."""
+    start, end = TOOL_MESSAGES.get(name, (f"Running {name}", f"Finished {name}"))
+    return start if phase == "start" else end
+
+
+def _extract_response_from_state(state: dict) -> AIResponse:
+    """Pull the AI response out of the agent's final state dict."""
+    structured = state.get("structured_response")
+    if structured:
+        return parse_ai_response(structured)
+
+    messages = state.get("messages") or []
+    if messages:
+        content = stringify_message_content(messages[-1].content)
+        return parse_ai_response(content)
+
+    return make_json_fallback_response("No response available from the agent.")
+
+
+def _classify_api_error(exc: Exception) -> tuple[AIResponse | None, bool]:
+    """Return (clean_response, log_traceback) for well-known API errors."""
+    msg = str(exc)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower() or "rate limit" in msg.lower():
+        return AIResponse(
+            message="Rate limit reached — please wait a moment and try again.",
+            blocks=[],
+        ), False
+    if "401" in msg or "403" in msg or "API_KEY_INVALID" in msg or "UNAUTHENTICATED" in msg:
+        return AIResponse(
+            message="Authentication failed. Check your API key with /models.",
+            blocks=[],
+        ), False
+    if "503" in msg or "UNAVAILABLE" in msg:
+        return AIResponse(
+            message="The AI provider is temporarily unavailable. Try again shortly.",
+            blocks=[],
+        ), False
+    return None, True
 
 
 def block_key(block: dict) -> str:

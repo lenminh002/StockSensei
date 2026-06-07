@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from config import save_config
+from stocksensei.core.config import save_config
 from stocksensei.extensions.api import ExtensionAPI, assert_api_compatible
 from stocksensei.extensions.discovery import ExtensionSource, discover_sources, load_source
 from utils import ask_text

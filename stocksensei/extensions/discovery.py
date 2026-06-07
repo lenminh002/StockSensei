@@ -7,7 +7,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Literal
 
-from config import CONFIG_DIR
+from stocksensei.core.config import CONFIG_DIR
 
 ExtensionScope = Literal["project", "global", "configured", "entry_point"]
 

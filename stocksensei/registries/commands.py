@@ -30,7 +30,7 @@ class CommandRegistry:
 
 
 def create_builtin_command_registry() -> CommandRegistry:
-    from command_prompt import COMMAND_SPECS
+    from stocksensei.ui.terminal.command_prompt import COMMAND_SPECS
 
     registry = CommandRegistry()
     for name, description in COMMAND_SPECS.items():
