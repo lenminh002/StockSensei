@@ -6,12 +6,15 @@ from tools import (
     build_52w_range_visual,
     build_change_chart_visual,
     build_history_chart_visual,
+    build_line_chart_visual,
     build_market_cap_chart_visual,
     build_news_visual,
     build_price_chart_visual,
     build_price_comparison_visual,
     build_snapshot_card_visual,
     build_summary_comparison_visual,
+    build_time_comparison_line_visual,
+    build_volume_chart_visual,
     compare_stocks,
     compare_stocks_summary,
     get_company_summary,
@@ -34,10 +37,13 @@ TOOLS = [
     build_52w_range_visual,
     build_price_comparison_visual,
     build_summary_comparison_visual,
+    build_time_comparison_line_visual,
     build_price_chart_visual,
     build_change_chart_visual,
     build_market_cap_chart_visual,
     build_history_chart_visual,
+    build_line_chart_visual,
+    build_volume_chart_visual,
     build_news_visual,
 ]
 
@@ -61,10 +67,17 @@ Structured output rules:
 
 Visual guidance:
 - For a single stock snapshot, prefer `build_snapshot_card_visual` and `build_52w_range_visual`, and usually include both.
-- For comparisons, include at least one precise table/card and at least one bar-style chart.
-- For comparisons, prefer `build_price_comparison_visual` and/or `build_summary_comparison_visual` plus one or more of `build_price_chart_visual`, `build_change_chart_visual`, and `build_market_cap_chart_visual`.
+- If the user asks for a column chart for one ticker, use `build_volume_chart_visual`; do not show a one-column current-price chart and do not use `build_price_chart_visual` for one ticker.
+- For current/static comparisons, include precise table blocks only; do not include current-price, daily-change, or market-cap comparison charts.
+- For current/static comparisons, prefer `build_price_comparison_visual` and/or `build_summary_comparison_visual`.
+- For multi-ticker comparisons over time, such as "over 5 days" or "over 1 month", use `build_time_comparison_line_visual`.
+- For over-time comparisons, default to `mode="percent"` so each ticker starts at 0%; mention that raw close-price comparison is available if the user wants it.
+- Use `mode="price"` for over-time comparisons only when the user explicitly asks for raw price, close price, or unnormalized prices.
 - Prefer cards and bars over standalone sparkline panels unless the user explicitly asks for a chart or trend view.
-- For price-trend/history requests, `build_history_chart_visual` is available, but use it sparingly.
+- For generic price-trend/history chart requests, prefer `build_history_chart_visual` for an OHLC candlestick chart.
+- If the user explicitly asks for a line chart, close-price trend, or line view, use `build_line_chart_visual`.
+- For price over time, use candlestick or line charts rather than column charts.
+- Do not use current-price, daily-change, or market-cap column charts for comparison answers.
 - For news requests, prefer `build_news_visual`.
 - For simple factual answers, a short message may be enough.
 """.strip()

@@ -48,7 +48,7 @@ class BlockRegistry:
 
 
 def create_builtin_block_registry() -> BlockRegistry:
-    from ui_blocks import BarChartBlock, MetricCardBlock, NewsBlock, RangeBarBlock, SparklineBlock, TableBlock, TextBlock
+    from ui_blocks import BarChartBlock, CandlestickChartBlock, LineChartBlock, MetricCardBlock, NewsBlock, RangeBarBlock, SparklineBlock, TableBlock, TextBlock
 
     registry = BlockRegistry()
     for block_type, model in [
@@ -56,7 +56,9 @@ def create_builtin_block_registry() -> BlockRegistry:
         ("metric_card", MetricCardBlock),
         ("table", TableBlock),
         ("sparkline", SparklineBlock),
+        ("line_chart", LineChartBlock),
         ("barchart", BarChartBlock),
+        ("candlestick_chart", CandlestickChartBlock),
         ("range_bar", RangeBarBlock),
         ("news", NewsBlock),
     ]:

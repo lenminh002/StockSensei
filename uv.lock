@@ -909,6 +909,15 @@ wheels = [
 ]
 
 [[package]]
+name = "plotext"
+version = "5.3.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/d7/f75f397af966fe252d0d34ffd3cae765317fce2134f925f95e7d6725d1ce/plotext-5.3.2.tar.gz", hash = "sha256:52d1e932e67c177bf357a3f0fe6ce14d1a96f7f7d5679d7b455b929df517068e", size = 61967, upload-time = "2024-09-24T15:13:37.728Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/1e/12fe7c40cd2099a1f454518754ed229b01beaf3bbb343127f0cc13ce6c22/plotext-5.3.2-py3-none-any.whl", hash = "sha256:394362349c1ddbf319548cfac17ca65e6d5dfc03200c40dfdc0503b3e95a2283", size = 64047, upload-time = "2024-09-24T15:13:36.296Z" },
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.52"
 source = { registry = "https://pypi.org/simple" }
@@ -1264,6 +1273,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "openai" },
+    { name = "plotext" },
     { name = "prompt-toolkit" },
     { name = "python-dotenv" },
     { name = "rich" },
@@ -1281,6 +1291,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.1.14" },
     { name = "langgraph", specifier = ">=0.2.0" },
     { name = "openai", specifier = ">=1.0.0" },
+    { name = "plotext", specifier = ">=5.3.2" },
     { name = "prompt-toolkit", specifier = ">=3.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "rich", specifier = ">=13.0.0" },

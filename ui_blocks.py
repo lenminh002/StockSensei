@@ -20,6 +20,10 @@ def _stringify_cell(value: Any) -> str:
     return str(value)
 
 
+def _is_finite_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
 def _sparkline(values: list[float]) -> str:
     if not values:
         return ""
@@ -32,21 +36,34 @@ def _sparkline(values: list[float]) -> str:
 
 
 def _fmt_market_cap(value: Any) -> str:
-    if not isinstance(value, (int, float)):
+    if not _is_finite_number(value):
         return "N/A"
     return f"${value / 1_000_000_000_000:.2f}T" if value >= 1_000_000_000_000 else f"${value / 1_000_000_000:.2f}B"
 
 
+def _fmt_compact_number(value: Any) -> str:
+    if not _is_finite_number(value):
+        return "N/A"
+    value = float(value)
+    if abs(value) >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.2f}B"
+    if abs(value) >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    if abs(value) >= 1_000:
+        return f"{value / 1_000:.2f}K"
+    return f"{value:,.0f}"
+
+
 def _fmt_price(value: Any) -> str:
-    return f"${value:,.2f}" if isinstance(value, (int, float)) else "N/A"
+    return f"${value:,.2f}" if _is_finite_number(value) else "N/A"
 
 
 def _fmt_change(value: Any) -> str:
-    return f"{value:+.2f}%" if isinstance(value, (int, float)) else "N/A"
+    return f"{value:+.2f}%" if _is_finite_number(value) else "N/A"
 
 
 def _fmt_pe(value: Any) -> str:
-    return f"{value:.2f}" if isinstance(value, (int, float)) else "N/A"
+    return f"{value:.2f}" if _is_finite_number(value) else "N/A"
 
 
 class TextBlock(BaseModel):
@@ -94,6 +111,29 @@ class SparklineBlock(BaseModel):
     summary: str | None = None
 
 
+class LineChartPoint(BaseModel):
+    date: str
+    value: float
+
+
+class LineChartSeries(BaseModel):
+    label: str
+    points: list[LineChartPoint]
+    color: str | None = None
+
+
+class LineChartBlock(BaseModel):
+    type: Literal["line_chart"]
+    title: str | None = None
+    ticker: str | None = None
+    period: str | None = None
+    label: str | None = None
+    points: list[LineChartPoint] = Field(default_factory=list)
+    series: list[LineChartSeries] = Field(default_factory=list)
+    unit: str | None = None
+    summary: str | None = None
+
+
 class BarChartItem(BaseModel):
     label: str
     value: float
@@ -106,6 +146,23 @@ class BarChartBlock(BaseModel):
     title: str | None = None
     items: list[BarChartItem]
     unit: str | None = None
+    summary: str | None = None
+
+
+class CandlestickPoint(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+
+
+class CandlestickChartBlock(BaseModel):
+    type: Literal["candlestick_chart"]
+    title: str | None = None
+    ticker: str | None = None
+    period: str | None = None
+    points: list[CandlestickPoint]
     summary: str | None = None
 
 
@@ -127,7 +184,15 @@ class NewsBlock(BaseModel):
 
 
 UIBlock = Annotated[
-    TextBlock | MetricCardBlock | TableBlock | SparklineBlock | BarChartBlock | RangeBarBlock | NewsBlock,
+    TextBlock
+    | MetricCardBlock
+    | TableBlock
+    | SparklineBlock
+    | LineChartBlock
+    | BarChartBlock
+    | CandlestickChartBlock
+    | RangeBarBlock
+    | NewsBlock,
     Field(discriminator="type"),
 ]
 UI_BLOCK_ADAPTER = TypeAdapter(UIBlock)
@@ -187,6 +252,29 @@ def make_sparkline_block(
     ).model_dump()
 
 
+def make_line_chart_block(
+    points: list[dict[str, Any]],
+    title: str | None = None,
+    ticker: str | None = None,
+    period: str | None = None,
+    label: str | None = None,
+    series: list[dict[str, Any]] | None = None,
+    unit: str | None = None,
+    summary: str | None = None,
+) -> dict[str, Any]:
+    return LineChartBlock(
+        type="line_chart",
+        title=title,
+        ticker=ticker,
+        period=period,
+        label=label,
+        points=points,
+        series=series or [],
+        unit=unit,
+        summary=summary,
+    ).model_dump()
+
+
 def make_barchart_block(
     items: list[dict[str, Any]],
     title: str | None = None,
@@ -194,6 +282,23 @@ def make_barchart_block(
     summary: str | None = None,
 ) -> dict[str, Any]:
     return BarChartBlock(type="barchart", title=title, items=items, unit=unit, summary=summary).model_dump()
+
+
+def make_candlestick_chart_block(
+    points: list[dict[str, Any]],
+    title: str | None = None,
+    ticker: str | None = None,
+    period: str | None = None,
+    summary: str | None = None,
+) -> dict[str, Any]:
+    return CandlestickChartBlock(
+        type="candlestick_chart",
+        title=title,
+        ticker=ticker,
+        period=period,
+        points=points,
+        summary=summary,
+    ).model_dump()
 
 
 def make_range_bar_block(
@@ -249,7 +354,7 @@ def make_52w_range_block(snapshot: dict[str, Any]) -> dict[str, Any]:
     low = snapshot.get("week_52_low")
     high = snapshot.get("week_52_high")
     price = snapshot.get("price")
-    if not all(isinstance(v, (int, float)) for v in [low, high, price]) or high == low:
+    if not all(_is_finite_number(v) for v in [low, high, price]) or high == low:
         return make_range_bar_block(
             title=f"{snapshot.get('ticker', '?')} 52-week range",
             minimum_label="Low: N/A",
@@ -309,7 +414,7 @@ def make_change_barchart_block(stocks: list[dict[str, Any]], title: str | None =
     items = []
     for stock in stocks:
         change = stock.get("change_percent")
-        if isinstance(change, (int, float)):
+        if _is_finite_number(change):
             items.append({
                 "label": stock.get("ticker") or "?",
                 "value": float(change),
@@ -319,11 +424,25 @@ def make_change_barchart_block(stocks: list[dict[str, Any]], title: str | None =
     return make_barchart_block(items, title or "Daily change chart", unit="%", summary="Daily percentage move by ticker")
 
 
+def make_price_barchart_block(stocks: list[dict[str, Any]], title: str | None = None) -> dict[str, Any]:
+    items = []
+    for stock in stocks:
+        price = stock.get("price")
+        if _is_finite_number(price):
+            items.append({
+                "label": stock.get("ticker") or "?",
+                "value": float(price),
+                "display_value": _fmt_price(price),
+                "color": "bright_cyan",
+            })
+    return make_barchart_block(items, title or "Price chart", unit="price", summary="Relative share price by ticker")
+
+
 def make_market_cap_barchart_block(stocks: list[dict[str, Any]], title: str | None = None) -> dict[str, Any]:
     items = []
     for stock in stocks:
         market_cap = stock.get("market_cap")
-        if isinstance(market_cap, (int, float)):
+        if _is_finite_number(market_cap):
             items.append({
                 "label": stock.get("ticker") or "?",
                 "value": float(market_cap),
@@ -333,15 +452,169 @@ def make_market_cap_barchart_block(stocks: list[dict[str, Any]], title: str | No
     return make_barchart_block(items, title or "Market cap chart", unit="market cap", summary="Relative company size")
 
 
+def make_volume_chart_block(history: dict[str, Any]) -> dict[str, Any]:
+    rows = history.get("data", [])
+    items = []
+    for row in rows:
+        volume = row.get("volume")
+        if _is_finite_number(volume):
+            items.append({
+                "label": str(row.get("date") or ""),
+                "value": float(volume),
+                "display_value": _fmt_compact_number(volume),
+                "color": "bright_cyan",
+            })
+    ticker = history.get("ticker") or ""
+    period = history.get("period") or ""
+    if items:
+        average = sum(item["value"] for item in items) / len(items)
+        summary = f"{ticker} {period}: average volume {_fmt_compact_number(average)}, latest {items[-1]['display_value']}".strip()
+    else:
+        summary = history.get("error") or f"No volume data available for {ticker} {period}".strip()
+    return make_barchart_block(
+        items,
+        title=f"{ticker} volume chart".strip(),
+        unit="volume",
+        summary=summary,
+    )
+
+
 def make_history_chart_block(history: dict[str, Any]) -> dict[str, Any]:
-    points = [row["close"] for row in history.get("data", []) if isinstance(row.get("close"), (int, float))]
-    labels = [row["date"] for row in history.get("data", [])]
-    summary = f"{history.get('ticker', '')} closing trend for {history.get('period', '')}".strip()
-    return make_sparkline_block(
+    rows = history.get("data", [])
+    points = [
+        {
+            "date": str(row.get("date") or ""),
+            "open": float(row["open"]),
+            "high": float(row["high"]),
+            "low": float(row["low"]),
+            "close": float(row["close"]),
+        }
+        for row in rows
+        if all(_is_finite_number(row.get(key)) for key in ["open", "high", "low", "close"])
+    ]
+    ticker = history.get("ticker") or ""
+    period = history.get("period") or ""
+    if points:
+        first_close = points[0]["close"]
+        latest_close = points[-1]["close"]
+        high = max(point["high"] for point in points)
+        low = min(point["low"] for point in points)
+        change = ((latest_close - first_close) / first_close * 100) if first_close else 0.0
+        summary = (
+            f"{ticker} {period}: close {_fmt_price(first_close)} -> {_fmt_price(latest_close)} "
+            f"({_fmt_change(change)}), high {_fmt_price(high)}, low {_fmt_price(low)}"
+        )
+    else:
+        summary = history.get("error") or f"No OHLC data available for {ticker} {period}".strip()
+    return make_candlestick_chart_block(
         points=points,
-        title=f"{history.get('ticker', '')} trend",
-        label=history.get("ticker"),
-        x_labels=labels,
+        title=f"{ticker} OHLC chart".strip(),
+        ticker=ticker,
+        period=period,
+        summary=summary,
+    )
+
+
+def make_history_line_chart_block(history: dict[str, Any]) -> dict[str, Any]:
+    rows = history.get("data", [])
+    points = [
+        {
+            "date": str(row.get("date") or ""),
+            "value": float(row["close"]),
+        }
+        for row in rows
+        if _is_finite_number(row.get("close"))
+    ]
+    ticker = history.get("ticker") or ""
+    period = history.get("period") or ""
+    if points:
+        first_close = points[0]["value"]
+        latest_close = points[-1]["value"]
+        high = max(point["value"] for point in points)
+        low = min(point["value"] for point in points)
+        change = ((latest_close - first_close) / first_close * 100) if first_close else 0.0
+        summary = (
+            f"{ticker} {period}: close {_fmt_price(first_close)} -> {_fmt_price(latest_close)} "
+            f"({_fmt_change(change)}), close high {_fmt_price(high)}, close low {_fmt_price(low)}"
+        )
+    else:
+        summary = history.get("error") or f"No close-price data available for {ticker} {period}".strip()
+    return make_line_chart_block(
+        points=points,
+        title=f"{ticker} close line chart".strip(),
+        ticker=ticker,
+        period=period,
+        label="Close",
+        unit="price",
+        summary=summary,
+    )
+
+
+def make_time_comparison_line_chart_block(
+    histories: list[dict[str, Any]],
+    period: str | None = None,
+    mode: str = "percent",
+) -> dict[str, Any]:
+    normalized_mode = (mode or "percent").strip().lower()
+    use_price = normalized_mode in {"price", "raw", "close", "closing_price", "raw_price"}
+    unit = "price" if use_price else "%"
+    label = "Close" if use_price else "Percent return"
+    colors = ["cyan+", "green+", "magenta+", "yellow+", "blue+", "red+"]
+    series = []
+    summary_parts = []
+    errors = []
+
+    for index, history in enumerate(histories):
+        ticker = history.get("ticker") or "?"
+        rows = history.get("data", [])
+        closes = [
+            (str(row.get("date") or ""), float(row["close"]))
+            for row in rows
+            if _is_finite_number(row.get("close"))
+        ]
+        if not closes:
+            errors.append(f"{ticker}: {history.get('error') or 'no close-price data'}")
+            continue
+
+        first_close = closes[0][1]
+        if not use_price and first_close == 0:
+            errors.append(f"{ticker}: first close is zero")
+            continue
+
+        points = []
+        for date, close in closes:
+            value = close if use_price else ((close - first_close) / first_close * 100)
+            points.append({"date": date, "value": value})
+
+        latest_value = points[-1]["value"]
+        series.append({
+            "label": ticker,
+            "points": points,
+            "color": colors[index % len(colors)],
+        })
+        if use_price:
+            summary_parts.append(f"{ticker} {_fmt_price(first_close)} -> {_fmt_price(latest_value)}")
+        else:
+            summary_parts.append(f"{ticker} {_fmt_change(latest_value)}")
+
+    actual_period = period or next((history.get("period") for history in histories if history.get("period")), "")
+    if summary_parts:
+        summary = f"{actual_period}: " if actual_period else ""
+        summary += " | ".join(summary_parts)
+        if errors:
+            summary += f" | Unavailable: {'; '.join(errors)}"
+    else:
+        summary = f"No close-price comparison data available. {'; '.join(errors)}".strip()
+
+    tickers = ", ".join(item["label"] for item in series)
+    return make_line_chart_block(
+        points=[],
+        series=series,
+        title=f"{tickers or 'Tickers'} {label.lower()} comparison".strip(),
+        ticker=tickers or None,
+        period=actual_period,
+        label=label,
+        unit=unit,
         summary=summary,
     )
 
@@ -405,6 +678,123 @@ def parse_ai_response(raw: Any) -> AIResponse:
                 continue
         return make_json_fallback_response(stripped)
     return make_json_fallback_response(str(raw))
+
+
+def _fmt_axis_value(value: float, unit: str | None = None) -> str:
+    if unit == "price":
+        return _fmt_price(value)
+    if unit == "market cap":
+        return _fmt_market_cap(value)
+    if unit == "%":
+        return _fmt_change(value)
+    return f"{value:,.2f}"
+
+
+def _grid_positions(width: int, segments: int = 4) -> list[int]:
+    if width <= 1:
+        return [0]
+    return sorted({round(index * (width - 1) / segments) for index in range(segments + 1)})
+
+
+def _bar_axis_labels(maximum: float, unit: str | None) -> str:
+    values = [maximum * index / 4 for index in range(5)]
+    return "Scale: " + " | ".join(_fmt_axis_value(value, unit) for value in values)
+
+
+def _positive_bar(value: float, maximum: float, width: int = 40) -> str:
+    if maximum <= 0:
+        return ""
+    filled = max(1, round((value / maximum) * (width - 1))) if value > 0 else 0
+    grid = set(_grid_positions(width))
+    chars = []
+    for index in range(width):
+        if index <= filled and value > 0:
+            chars.append("=")
+        elif index in grid:
+            chars.append("|")
+        else:
+            chars.append(".")
+    return "".join(chars)
+
+
+def _change_bar(value: float, maximum: float, width: int = 19) -> str:
+    if maximum <= 0:
+        return "." * width + "|" + "." * width
+    left_grid = set(_grid_positions(width)) - {width - 1}
+    right_grid = set(_grid_positions(width)) - {0}
+    left = ["|" if index in left_grid else "." for index in range(width)]
+    right = ["|" if index in right_grid else "." for index in range(width)]
+    fill = min(width, round((abs(value) / maximum) * width))
+    if value < 0:
+        for index in range(width - fill, width):
+            left[index] = "="
+    elif value > 0:
+        for index in range(fill):
+            right[index] = "="
+    return "".join(left) + "|" + "".join(right)
+
+
+def _value_to_row(value: float, low: float, high: float, rows: int) -> int:
+    if rows <= 1 or math.isclose(low, high):
+        return 0
+    ratio = (high - value) / (high - low)
+    return min(rows - 1, max(0, round(ratio * (rows - 1))))
+
+
+def _render_candlestick_lines(block_obj: CandlestickChartBlock) -> list[str]:
+    points = block_obj.points
+    if not points:
+        return ["No chart data."]
+
+    raw_low = min(point.low for point in points)
+    raw_high = max(point.high for point in points)
+    span = raw_high - raw_low
+    padding = span * 0.08 if span else max(abs(raw_high) * 0.02, 1.0)
+    low = raw_low - padding
+    high = raw_high + padding
+    rows = 14
+    x_step = 3
+    chart_width = max(1, ((len(points) - 1) * x_step) + 1)
+    grid_rows = set(_grid_positions(rows))
+    lines = []
+
+    for row in range(rows):
+        price = high - ((high - low) * row / (rows - 1) if rows > 1 else 0)
+        cells: dict[int, tuple[str, str]] = {}
+        for index, point in enumerate(points):
+            x = index * x_step
+            high_row = _value_to_row(point.high, low, high, rows)
+            low_row = _value_to_row(point.low, low, high, rows)
+            open_row = _value_to_row(point.open, low, high, rows)
+            close_row = _value_to_row(point.close, low, high, rows)
+            body_top = min(open_row, close_row)
+            body_bottom = max(open_row, close_row)
+            color = "bright_green" if point.close >= point.open else "bright_red"
+
+            if high_row <= row <= low_row:
+                cells[x] = ("|", color)
+            if body_top <= row <= body_bottom:
+                cells[x] = ("=" if point.close >= point.open else "x", color)
+
+        body = []
+        for column in range(chart_width):
+            if column in cells:
+                char, color = cells[column]
+                body.append(f"[{color}]{char}[/{color}]")
+            elif row in grid_rows:
+                body.append("[bright_black].[/bright_black]")
+            else:
+                body.append(" ")
+        lines.append(f"[bright_black]{_fmt_price(price):>10} |[/bright_black] {''.join(body)}")
+
+    first = points[0].date
+    last = points[-1].date
+    lines.append(f"[bright_black]{'':>10} + {'-' * chart_width}[/bright_black]")
+    lines.append(f"[bright_black]{'Dates':>10}[/bright_black]   [cyan]{first}[/cyan] [bright_white]->[/bright_white] [cyan]{last}[/cyan]")
+    lines.append("[bright_black]Legend:[/bright_black] [bright_green]= close >= open[/bright_green], [bright_red]x close < open[/bright_red], | wick high/low")
+    if block_obj.summary:
+        lines.append(f"[bright_white]{block_obj.summary}[/bright_white]")
+    return lines
 
 
 def render_block(console: Console, block: UIBlock | dict[str, Any]) -> None:
@@ -476,28 +866,73 @@ def render_block(console: Console, block: UIBlock | dict[str, Any]) -> None:
         console.print(Panel("\n".join(body), title=block_obj.title or "Trend", title_align="left", border_style="bright_magenta", expand=False))
         return
 
+    if isinstance(block_obj, LineChartBlock):
+        body = []
+        if block_obj.series:
+            for item in block_obj.series:
+                values = [point.value for point in item.points]
+                spark = _sparkline(values)
+                body.append(f"[bold bright_cyan]{item.label}[/bold bright_cyan]: [bold bright_magenta]{spark or 'No chart data.'}[/bold bright_magenta]")
+            first_points = next((item.points for item in block_obj.series if item.points), [])
+            if first_points:
+                body.append(f"[bright_black]Range:[/bright_black] [cyan]{first_points[0].date}[/cyan] [bright_white]->[/bright_white] [cyan]{first_points[-1].date}[/cyan]")
+        else:
+            values = [point.value for point in block_obj.points]
+            spark = _sparkline(values)
+            label = f"[bold bright_cyan]{block_obj.label or block_obj.ticker}[/bold bright_cyan]: " if (block_obj.label or block_obj.ticker) else ""
+            body.append(f"{label}[bold bright_magenta]{spark or 'No chart data.'}[/bold bright_magenta]")
+            if block_obj.points:
+                body.append(f"[bright_black]Range:[/bright_black] [cyan]{block_obj.points[0].date}[/cyan] [bright_white]->[/bright_white] [cyan]{block_obj.points[-1].date}[/cyan]")
+        if block_obj.summary:
+            body.append(f"[bright_white]{block_obj.summary}[/bright_white]")
+        console.print(Panel("\n".join(body), title=block_obj.title or "Line chart", title_align="left", border_style="bright_magenta", expand=False))
+        return
+
     if isinstance(block_obj, BarChartBlock):
-        max_abs = max((abs(item.value) for item in block_obj.items), default=1.0)
+        if not block_obj.items:
+            console.print(Panel("No chart data.", title=block_obj.title or "Chart", title_align="left", border_style="bright_green", expand=False))
+            return
+
         lines = []
-        for item in block_obj.items:
-            width = max(1, int((abs(item.value) / max_abs) * 24)) if max_abs else 1
-            bar = "#" * width
-            color = item.color or "bright_cyan"
-            lines.append(f"[bold bright_cyan]{item.label:>6}[/bold bright_cyan]  [{color}]{bar}[/{color}] [bold {color}]{item.display_value}[/bold {color}]")
+        if block_obj.unit == "%":
+            max_abs = max((abs(item.value) for item in block_obj.items), default=1.0)
+            lines.append(f"[bright_black]Scale: {_fmt_axis_value(-max_abs, '%')} | {_fmt_axis_value(0.0, '%')} | {_fmt_axis_value(max_abs, '%')}[/bright_black]")
+            lines.append(f"[bright_black]{'':>6}  {'negative':>19}|{'positive':<19}[/bright_black]")
+            for item in block_obj.items:
+                color = item.color or ("bright_green" if item.value >= 0 else "bright_red")
+                bar = _change_bar(item.value, max_abs)
+                lines.append(f"[bold bright_cyan]{item.label:>6}[/bold bright_cyan]  [{color}]{bar}[/{color}] [bold {color}]{item.display_value}[/bold {color}]")
+        else:
+            items = sorted(block_obj.items, key=lambda item: item.value, reverse=True)
+            maximum = max((item.value for item in items), default=1.0)
+            lines.append(f"[bright_black]{_bar_axis_labels(maximum, block_obj.unit)}[/bright_black]")
+            for item in items:
+                color = item.color or "bright_cyan"
+                bar = _positive_bar(item.value, maximum)
+                lines.append(f"[bold bright_cyan]{item.label:>6}[/bold bright_cyan]  [{color}]{bar}[/{color}] [bold {color}]{item.display_value}[/bold {color}]")
         if block_obj.summary:
             lines.extend(["", f"[bright_white]{block_obj.summary}[/bright_white]"])
-        console.print(Panel("\n".join(lines) if lines else "No chart data.", title=block_obj.title or "Chart", title_align="left", border_style="bright_green", expand=False))
+        console.print(Panel("\n".join(lines), title=block_obj.title or "Chart", title_align="left", border_style="bright_green", expand=False))
+        return
+
+    if isinstance(block_obj, CandlestickChartBlock):
+        title = block_obj.title or f"{block_obj.ticker or 'Ticker'} OHLC chart"
+        console.print(Panel("\n".join(_render_candlestick_lines(block_obj)), title=title, title_align="left", border_style="bright_green", expand=False))
         return
 
     if isinstance(block_obj, RangeBarBlock):
-        width = 28
+        width = 41
         pointer_index = min(width - 1, max(0, int(block_obj.position * (width - 1))))
-        cells = ["-"] * width
-        cells[pointer_index] = "|"
+        tick_positions = set(_grid_positions(width))
+        cells = ["+" if index in tick_positions else "=" for index in range(width)]
+        cells[pointer_index] = "^"
         bar = "".join(cells)
+        marker = " " * pointer_index + "^"
         lines = [
             f"[bright_cyan]{block_obj.minimum_label}[/bright_cyan] [bright_black]{bar}[/bright_black] [bright_magenta]{block_obj.maximum_label}[/bright_magenta]",
-            f"[bold bright_white]{block_obj.current_label}[/bold bright_white]",
+            f"[bright_black]{'':{len(block_obj.minimum_label) + 1}}{marker}[/bright_black]",
+            f"[bold bright_white]{block_obj.current_label}[/bold bright_white] [bright_black]position {block_obj.position * 100:.1f}% of range[/bright_black]",
+            "[bright_black]Grid: 0% | 25% | 50% | 75% | 100%[/bright_black]",
         ]
         if block_obj.summary:
             lines.append(f"[bright_black]{block_obj.summary}[/bright_black]")

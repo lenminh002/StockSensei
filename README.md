@@ -45,6 +45,7 @@ Here are a few examples of StockSensei's terminal UI in action:
 | LLM Providers | OpenAI, Anthropic, Gemini, Groq, DeepSeek, OpenRouter, Ollama | Swappable AI backends via `/models` |
 | Agent State | [LangGraph](https://github.com/langchain-ai/langgraph) | Conversation memory and session checkpointing |
 | Terminal UI | [Rich](https://github.com/Textualize/rich) | Cards, tables, panels, bars, and live status |
+| Terminal Charts | [plotext](https://github.com/piccolomo/plotext) | Terminal-native OHLC/candlestick charts with axes and gridlines |
 | Interactive Input | [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit) | Slash-command completion and terminal prompt UX |
 | Environment | `python-dotenv` | Secure `.env` loading for local development |
 | Package Manager | `uv` | Fast dependency resolution and global CLI installation |
@@ -131,7 +132,10 @@ You: nvidia vs apple
 StockSensei: [Renders a comparison table with price, P/E, market cap, 52w range]
 
 You: show me nvda's chart for the last 3 months
-StockSensei: [Draws a sparkline trend chart with annotated date range]
+StockSensei: [Draws an OHLC candlestick chart with price axes, gridlines, and date labels]
+
+You: column chart for apple
+StockSensei: [Draws a daily volume column chart, not a one-column current-price chart]
 
 You: what's the latest news on tesla?
 StockSensei: [Lists the 10 most recent headlines]
@@ -212,7 +216,7 @@ StockSensei uses a strict JSON output contract. The AI always returns a structur
 }
 ```
 
-Supported block types: `text`, `metric_card`, `table`, `barchart`, `range_bar`, `sparkline`, `news`.
+Supported block types: `text`, `metric_card`, `table`, `barchart`, `line_chart`, `candlestick_chart`, `range_bar`, `sparkline`, `news`.
 
 This contract means output is deterministic, safe to render, and consistent regardless of which AI provider is active.
 
@@ -237,7 +241,7 @@ This contract means output is deterministic, safe to render, and consistent rega
 
 - **Config file:** Provider settings and API keys are stored in `~/.stocksensei_config.json`.
 - **Tool architecture:** Market-data tools return clean structured data; visual builder tools return render-ready block payloads; terminal rendering is handled in the CLI layer.
-- **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, bar charts, range bars, sparklines, and news lists.
+- **Structured rendering:** The CLI validates the JSON response schema and renders supported block types — text, metric cards, tables, column charts, line charts, candlestick charts, range bars, sparklines, and news lists.
 - **Fallback handling:** If the AI output cannot be parsed as a structured response, StockSensei safely falls back to a plain text block rather than crashing.
 - **Cross-Platform:** Works on macOS, Linux, and Windows (PowerShell).
 

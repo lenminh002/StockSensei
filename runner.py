@@ -84,10 +84,13 @@ TOOL_MESSAGES = {
     "build_52w_range_visual": ("Building 52-week range", "52-week range ready"),
     "build_price_comparison_visual": ("Building comparison table", "Comparison table ready"),
     "build_summary_comparison_visual": ("Building company summary table", "Company summary table ready"),
-    "build_price_chart_visual": ("Drawing price bars", "Price bars ready"),
-    "build_change_chart_visual": ("Drawing daily change bars", "Daily change bars ready"),
-    "build_market_cap_chart_visual": ("Drawing market-cap bars", "Market-cap bars ready"),
+    "build_time_comparison_line_visual": ("Drawing comparison line chart", "Comparison line chart ready"),
+    "build_price_chart_visual": ("Drawing price columns", "Price columns ready"),
+    "build_change_chart_visual": ("Drawing daily change columns", "Daily change columns ready"),
+    "build_market_cap_chart_visual": ("Drawing market-cap columns", "Market-cap columns ready"),
     "build_history_chart_visual": ("Drawing trend view", "Trend view ready"),
+    "build_line_chart_visual": ("Drawing line chart", "Line chart ready"),
+    "build_volume_chart_visual": ("Drawing volume columns", "Volume columns ready"),
     "build_news_visual": ("Formatting news list", "News list ready"),
 }
 
